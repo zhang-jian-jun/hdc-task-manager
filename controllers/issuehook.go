@@ -244,7 +244,6 @@ func (c *GaussHookEventControllers) handleIssue() {
 	hdcLabels := beego.AppConfig.String("hdc_gauss_label")
 	if labelStr == "" || !strings.Contains(labelStr, hdcLabels) {
 		logs.Error("Label error, labelStr: ", labelStr, ", hdcLabels: ", hdcLabels)
-		return
 	}
 	if issueHook.Action == "assign" {
 		//Update the person in charge of the issue template
@@ -340,7 +339,6 @@ func (c *GaussHookEventControllers) handlePullReq() {
 	hdcLabels := beego.AppConfig.String("hdc_gauss_label")
 	if labelStr == "" || !strings.Contains(labelStr, hdcLabels) {
 		logs.Error("Label error, labelStr: ", labelStr, ", hdcLabels: ", hdcLabels)
-		return
 	}
 	if prHook.Action == "assign" {
 		taskhandler.UpdatePrAssignee(prHook)

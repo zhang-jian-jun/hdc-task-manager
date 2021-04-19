@@ -508,22 +508,25 @@ func AddHookGaussIssue(issueData *models.IssuePayload) {
 		GaussIssueUser(userId, goi.OrId, goi.IssueNumber, goi.RepoPath, goi.Owner, 1)
 		// Calculate the points earned by users
 		CreateUserPoints(userId, goi.OrId, 0, 1)
-		// Will write issue comments
-		igc := fmt.Sprintf(IssueGaussComment, issueData.User.Login)
-		AddCommentToIssue(igc, issueData.Issue.Number, owner, issueData.Repository.Path, gaussToken)
-		// edit label
-		hdcGuassLabel := beego.AppConfig.String("hdc_gauss_label")
-		EditGaussLabel(issueData.Issue.Number, hdcGuassLabel, gaussToken, owner, goi)
-		// Send private message
-		igcs := fmt.Sprintf(IssueGaussCommentSend, goi.GitUrl)
-		SendPrivateLetters(gaussToken, igcs, issueData.User.Login)
-		assigneeStr := beego.AppConfig.String("gauss::assignee")
-		if len(assigneeStr) > 1 {
-			assigneeSlice := strings.Split(assigneeStr, ",")
-			if len(assigneeSlice) > 0 {
-				for _, as := range assigneeSlice {
-					igcs := fmt.Sprintf(IssueGaussRewiewSend, issueData.User.Login, goi.GitUrl)
-					SendPrivateLetters(gaussToken, igcs, as)
+		hdcGaussLabel := beego.AppConfig.String("hdc_gauss_label")
+		if len(goi.IssueLabel) > 1 && strings.Contains(strings.ToLower(goi.IssueLabel), hdcGaussLabel) {
+			// Will write issue comments
+			igc := fmt.Sprintf(IssueGaussComment, issueData.User.Login)
+			AddCommentToIssue(igc, issueData.Issue.Number, owner, issueData.Repository.Path, gaussToken)
+			// edit label
+			//hdcGuassLabel := beego.AppConfig.String("hdc_gauss_label")
+			//EditGaussLabel(issueData.Issue.Number, hdcGuassLabel, gaussToken, owner, goi)
+			// Send private message
+			igcs := fmt.Sprintf(IssueGaussCommentSend, goi.GitUrl)
+			SendPrivateLetters(gaussToken, igcs, issueData.User.Login)
+			assigneeStr := beego.AppConfig.String("gauss::assignee")
+			if len(assigneeStr) > 1 {
+				assigneeSlice := strings.Split(assigneeStr, ",")
+				if len(assigneeSlice) > 0 {
+					for _, as := range assigneeSlice {
+						igcs := fmt.Sprintf(IssueGaussRewiewSend, issueData.User.Login, goi.GitUrl)
+						SendPrivateLetters(gaussToken, igcs, as)
+					}
 				}
 			}
 		}
@@ -533,12 +536,16 @@ func AddHookGaussIssue(issueData *models.IssuePayload) {
 // EditGaussLabel Edit label
 func EditGaussLabel(number, hdcGuassLabel, gaussToken, owner string, goi models.GaussOriginIssue) {
 	labels := goi.IssueLabel
-	if len(labels) > 1 {
-		if !strings.Contains(labels, hdcGuassLabel) {
-			labels = labels + "," + hdcGuassLabel
+	lalelSlice := []string{beego.AppConfig.String("hdc_gauss_label")}
+	lalelSlice = append(lalelSlice, hdcGuassLabel)
+	for _, lab := range lalelSlice {
+		if len(labels) > 1 {
+			if !strings.Contains(labels, lab) {
+				labels = labels + "," + lab
+			}
+		} else {
+			labels = lab
 		}
-	} else {
-		labels = hdcGuassLabel
 	}
 	ChangeIssueLabel(gaussToken, goi.RepoPath, number, owner, labels)
 	goi.IssueLabel = labels
@@ -552,12 +559,16 @@ func EditGaussLabel(number, hdcGuassLabel, gaussToken, owner string, goi models.
 // EditGaussPrLabel Edit label
 func EditGaussPrLabel(hdcGuassLabel, gaussToken, owner string, gop models.GaussOriginPr, number int64) {
 	labels := gop.PrLabel
-	if len(labels) > 1 {
-		if !strings.Contains(labels, hdcGuassLabel) {
-			labels = labels + "," + hdcGuassLabel
+	lalelSlice := []string{beego.AppConfig.String("hdc_gauss_label")}
+	lalelSlice = append(lalelSlice, hdcGuassLabel)
+	for _, lab := range lalelSlice {
+		if len(labels) > 1 {
+			if !strings.Contains(labels, lab) {
+				labels = labels + "," + lab
+			}
+		} else {
+			labels = lab
 		}
-	} else {
-		labels = hdcGuassLabel
 	}
 	ChangePrLabel(gaussToken, gop.RepoPath, owner, labels, number)
 	gop.PrLabel = labels

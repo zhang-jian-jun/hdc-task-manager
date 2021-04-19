@@ -639,6 +639,8 @@ func HandleGaussIssueComment(payload models.CommentPayload) {
 				goi.IssueNumber, goi.RepoPath, goi.Owner)
 			is := fmt.Sprintf(IssueGaussPointComment, goi.IssueCreate)
 			AddCommentToIssue(is, payload.Issue.Number, owner, payload.Repository.Path, gaussToken)
+			hdcGuassLabel := strings.ReplaceAll(GaussHighCmd, "/", "")
+			EditGaussLabel(issueNumber, hdcGuassLabel, gaussToken, owner, goi)
 		}
 	} else if strings.HasPrefix(cBody, GaussMediumCmd) {
 		userId, pointValue := AddGaussUserPoints(gaussToken, issuePointStr,
@@ -648,6 +650,8 @@ func HandleGaussIssueComment(payload models.CommentPayload) {
 				goi.IssueNumber, goi.RepoPath, goi.Owner)
 			is := fmt.Sprintf(IssueGaussPointComment, goi.IssueCreate)
 			AddCommentToIssue(is, payload.Issue.Number, owner, payload.Repository.Path, gaussToken)
+			hdcGuassLabel := strings.ReplaceAll(GaussMediumCmd, "/", "")
+			EditGaussLabel(issueNumber, hdcGuassLabel, gaussToken, owner, goi)
 		}
 	} else if strings.HasPrefix(cBody, GaussLowCmd) {
 		userId, pointValue := AddGaussUserPoints(gaussToken, issuePointStr,
@@ -657,6 +661,8 @@ func HandleGaussIssueComment(payload models.CommentPayload) {
 				goi.IssueNumber, goi.RepoPath, goi.Owner)
 			is := fmt.Sprintf(IssueGaussPointComment, goi.IssueCreate)
 			AddCommentToIssue(is, payload.Issue.Number, owner, payload.Repository.Path, gaussToken)
+			hdcGuassLabel := strings.ReplaceAll(GaussLowCmd, "/", "")
+			EditGaussLabel(issueNumber, hdcGuassLabel, gaussToken, owner, goi)
 		}
 	} else if strings.HasPrefix(cBody, GaussZeroCmd) {
 		userId, pointValue := AddGaussUserPoints(gaussToken, issuePointStr,
@@ -666,6 +672,8 @@ func HandleGaussIssueComment(payload models.CommentPayload) {
 				goi.IssueNumber, goi.RepoPath, goi.Owner)
 			is := fmt.Sprintf(IssueGaussPointComment, goi.IssueCreate)
 			AddCommentToIssue(is, payload.Issue.Number, owner, payload.Repository.Path, gaussToken)
+			hdcGuassLabel := strings.ReplaceAll(GaussZeroCmd, "/", "")
+			EditGaussLabel(issueNumber, hdcGuassLabel, gaussToken, owner, goi)
 		}
 	}
 }
@@ -878,6 +886,8 @@ func HandleGaussPrComment(payload models.CommentPayload) {
 				strconv.FormatInt(gop.PrNumber, 10), gop.RepoPath, gop.Owner)
 			is := fmt.Sprintf(PrGaussPointComment, gop.PrCreate)
 			AddCommentToPr(is, owner, payload.Repository.Path, gaussToken, prNumber)
+			hdcGuassLabel := strings.ReplaceAll(GaussHighCmd, "/", "")
+			EditGaussPrLabel(hdcGuassLabel, gaussToken, owner, gop, prNumber)
 		}
 	} else if strings.HasPrefix(cBody, GaussMediumCmd) {
 		userId, pointValue := AddGaussUserPoints(gaussToken, issuePointStr,
@@ -887,6 +897,8 @@ func HandleGaussPrComment(payload models.CommentPayload) {
 				strconv.FormatInt(gop.PrNumber, 10), gop.RepoPath, gop.Owner)
 			is := fmt.Sprintf(PrGaussPointComment, gop.PrCreate)
 			AddCommentToPr(is, owner, payload.Repository.Path, gaussToken, prNumber)
+			hdcGuassLabel := strings.ReplaceAll(GaussMediumCmd, "/", "")
+			EditGaussPrLabel(hdcGuassLabel, gaussToken, owner, gop, prNumber)
 		}
 	} else if strings.HasPrefix(cBody, GaussLowCmd) {
 		userId, pointValue := AddGaussUserPoints(gaussToken, issuePointStr,
@@ -896,6 +908,8 @@ func HandleGaussPrComment(payload models.CommentPayload) {
 				strconv.FormatInt(gop.PrNumber, 10), gop.RepoPath, gop.Owner)
 			is := fmt.Sprintf(PrGaussPointComment, gop.PrCreate)
 			AddCommentToPr(is, owner, payload.Repository.Path, gaussToken, prNumber)
+			hdcGuassLabel := strings.ReplaceAll(GaussLowCmd, "/", "")
+			EditGaussPrLabel(hdcGuassLabel, gaussToken, owner, gop, prNumber)
 		}
 	} else if strings.HasPrefix(cBody, GaussZeroCmd) {
 		userId, pointValue := AddGaussUserPoints(gaussToken, issuePointStr,
@@ -905,6 +919,8 @@ func HandleGaussPrComment(payload models.CommentPayload) {
 				strconv.FormatInt(gop.PrNumber, 10), gop.RepoPath, gop.Owner)
 			is := fmt.Sprintf(PrGaussPointComment, gop.PrCreate)
 			AddCommentToPr(is, owner, payload.Repository.Path, gaussToken, prNumber)
+			hdcGuassLabel := strings.ReplaceAll(GaussZeroCmd, "/", "")
+			EditGaussPrLabel(hdcGuassLabel, gaussToken, owner, gop, prNumber)
 		}
 	}
 }
