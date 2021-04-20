@@ -158,7 +158,7 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 		switch issueHook.State {
 		case IssueOpenState:
 			// Non-reviewers, cannot modify the status of the issue
-			if eoi.IssueAssignee != issueHook.Issue.User.Login {
+			if eoi.IssueAssignee != issueHook.Sender.Login {
 				is := fmt.Sprintf(IssueStateProc, issueHook.Issue.User.Login)
 				AddCommentToIssue(is, issueHook.Issue.Number, owner, issueHook.Repository.Path, eulerToken)
 				upErr := UpdateIssueToGit(eulerToken, owner, repoPath, eoi.IssueState, eoi)
@@ -173,7 +173,7 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 			}
 		case IssueProgressState:
 			// Non-reviewers, cannot modify the status of the issue
-			if eoi.IssueAssignee != issueHook.Issue.User.Login {
+			if eoi.IssueAssignee != issueHook.Sender.Login {
 				is := fmt.Sprintf(IssueStateProc, issueHook.Issue.User.Login)
 				AddCommentToIssue(is, issueHook.Issue.Number, owner, issueHook.Repository.Path, eulerToken)
 				upErr := UpdateIssueToGit(eulerToken, owner, repoPath, eoi.IssueState, eoi)
@@ -188,7 +188,7 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 			}
 		case IssueCloseState:
 			// Non-reviewers, cannot modify the status of the issue
-			if eoi.IssueAssignee != issueHook.Issue.User.Login {
+			if eoi.IssueAssignee != issueHook.Sender.Login {
 				is := fmt.Sprintf(IssueStateProc, issueHook.Issue.User.Login)
 				AddCommentToIssue(is, issueHook.Issue.Number, owner, issueHook.Repository.Path, eulerToken)
 				upErr := UpdateIssueToGit(eulerToken, owner, repoPath, "open", eoi)
@@ -209,7 +209,7 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 			}
 		case IssueRejectState:
 			// Non-reviewers, cannot modify the status of the issue
-			if eoi.IssueAssignee != issueHook.Issue.User.Login {
+			if eoi.IssueAssignee != issueHook.Sender.Login {
 				is := fmt.Sprintf(IssueStateProc, issueHook.Issue.User.Login)
 				AddCommentToIssue(is, issueHook.Issue.Number, owner, issueHook.Repository.Path, eulerToken)
 				upErr := UpdateIssueToGit(eulerToken, owner, repoPath, eoi.IssueState, eoi)
@@ -336,7 +336,7 @@ func UserGiveUpTask(payload models.CommentPayload, eulerToken, owner string, eoi
 					// Edit label
 					hdcTask := beego.AppConfig.String("hdc_task")
 					eoi.IssueLabel = hdcTask
-					EditLabel(payload, hdcTask, eulerToken, owner, eoi)
+					EditLabel(payload.Repository.Path, payload.Issue.Number, hdcTask, eulerToken, owner, eoi)
 					is := fmt.Sprintf(IssueGiveUpSuccess, payload.Comment.User.Login)
 					AddCommentToIssue(is, payload.Issue.Number, owner, payload.Repository.Path, eulerToken)
 					eir := models.QueryEulerIssueUserRecordset(userId, eoi.OrId, 2)
@@ -372,7 +372,7 @@ func UserSubmitsTask(payload models.CommentPayload, eulerToken, owner string, eo
 			if eu.Status == 2 {
 				// Edit label
 				hdcTaskRewiew := beego.AppConfig.String("hdc_task_rewiew")
-				EditLabel(payload, hdcTaskRewiew, eulerToken, owner, eoi)
+				EditLabel(payload.Repository.Path, payload.Issue.Number, hdcTaskRewiew, eulerToken, owner, eoi)
 				is := fmt.Sprintf(IssueClaimSubmitComplete, payload.Comment.User.Login)
 				AddCommentToIssue(is, payload.Issue.Number, owner, payload.Repository.Path, eulerToken)
 				et := EulerIssueUserRecordTp{UserId: userId, OrId: eoi.OrId, IssueNumber: payload.Issue.Number,
@@ -381,7 +381,7 @@ func UserSubmitsTask(payload models.CommentPayload, eulerToken, owner string, eo
 			} else if eu.Status == 1 {
 				// Edit label
 				hdcTaskRewiew := beego.AppConfig.String("hdc_task_rewiew")
-				EditLabel(payload, hdcTaskRewiew, eulerToken, owner, eoi)
+				EditLabel(payload.Repository.Path, payload.Issue.Number, hdcTaskRewiew, eulerToken, owner, eoi)
 				is := fmt.Sprintf(IssueClaimReSubmit, payload.Comment.User.Login)
 				AddCommentToIssue(is, payload.Issue.Number, owner, payload.Repository.Path, eulerToken)
 				eir := models.QueryEulerIssueUserRecordset(userId, eoi.OrId, 3)
@@ -488,7 +488,7 @@ func StartClaimTask(payload models.CommentPayload, userId int64, eulerToken, own
 			SendPrivateLetters(eulerToken, iss, payload.Comment.User.Login)
 			// Edit label
 			hdcTaskAssign := beego.AppConfig.String("hdc_task_assign")
-			EditLabel(payload, hdcTaskAssign, eulerToken, owner, eoi)
+			EditLabel(payload.Repository.Path, payload.Issue.Number, hdcTaskAssign, eulerToken, owner, eoi)
 		} else {
 			et := EulerIssueUserRecordTp{UserId: userId, OrId: eoi.OrId, IssueNumber: payload.Issue.Number,
 				RepoPath: payload.Repository.Path, Owner: owner, Status: 7}
@@ -516,7 +516,7 @@ func EulerIssueUserRecord(et EulerIssueUserRecordTp) {
 }
 
 // EditLabel Edit label
-func EditLabel(payload models.CommentPayload, hdcTaskAssign, eulerToken, owner string, eoi models.EulerOriginIssue) {
+func EditLabel(issuePath, issueNumber, hdcTaskAssign, eulerToken, owner string, eoi models.EulerOriginIssue) {
 	labels := eoi.IssueLabel
 	if len(labels) > 1 {
 		if !strings.Contains(labels, hdcTaskAssign) {
@@ -525,7 +525,7 @@ func EditLabel(payload models.CommentPayload, hdcTaskAssign, eulerToken, owner s
 	} else {
 		labels = hdcTaskAssign
 	}
-	ChangeIssueLabel(eulerToken, payload.Repository.Path, payload.Issue.Number, owner, labels)
+	ChangeIssueLabel(eulerToken, issuePath, issueNumber, owner, labels)
 	eoi.IssueLabel = labels
 	eoi.UpdateTime = common.GetCurTime()
 	upErr := models.UpdateEulerOriginIssue(&eoi, "IssueLabel", "UpdateTime")
@@ -613,11 +613,6 @@ func HandleGaussIssueComment(payload models.CommentPayload) {
 		logs.Error("Cannot edit comment, value: ", payload.Issue)
 		return
 	}
-	assignFlag := reviewIsvalid(cuAccount)
-	if !assignFlag {
-		logs.Error("Invalid comment, discard, body: ", cBody, ", cuAccount: ", cuAccount)
-		return
-	}
 	issueNumber := common.TrimString(payload.Issue.Number)
 	repoPath := common.TrimString(payload.Repository.Path)
 	owner := common.TrimString(payload.Repository.NameSpace)
@@ -626,6 +621,11 @@ func HandleGaussIssueComment(payload models.CommentPayload) {
 	eiErr := models.QueryGaussOriginIssue(&goi, "Owner", "RepoPath", "IssueId", "IssueNumber")
 	if goi.OrId == 0 {
 		logs.Error("QueryGaussOriginIssue, Data does not exist, eiErr: ", eiErr)
+		return
+	}
+	assignFlag := reviewIsvalid(cuAccount)
+	if !assignFlag && cuAccount != goi.IssueAssignee {
+		logs.Error("Invalid comment, discard, body: ", cBody, ", cuAccount: ", cuAccount)
 		return
 	}
 	gaussToken := os.Getenv("GITEE_GAUSS_TOKEN")
@@ -864,11 +864,6 @@ func HandleGaussPrComment(payload models.CommentPayload) {
 			"cuAccount, cBody: ", prNumber, cuAccount, cBody)
 		return
 	}
-	assignFlag := reviewIsvalid(cuAccount)
-	if !assignFlag {
-		logs.Error("Invalid comment, discard, body: ", cBody, ", cuAccount: ", cuAccount)
-		return
-	}
 	repoPath := common.TrimString(payload.Repository.Path)
 	owner := common.TrimString(payload.Repository.NameSpace)
 	gop := models.GaussOriginPr{Owner: owner, RepoPath: repoPath,
@@ -876,6 +871,11 @@ func HandleGaussPrComment(payload models.CommentPayload) {
 	eiErr := models.QueryGaussOriginPr(&gop, "Owner", "RepoPath", "PrId", "PrNumber")
 	if gop.OrId == 0 {
 		logs.Error("QueryGaussOriginPr, Data does not exist, eiErr: ", eiErr)
+		return
+	}
+	assignFlag := reviewIsvalid(cuAccount)
+	if !assignFlag && gop.PrAssignee != cuAccount {
+		logs.Error("Invalid comment, discard, body: ", cBody, ", cuAccount: ", cuAccount)
 		return
 	}
 	gaussToken := os.Getenv("GITEE_GAUSS_TOKEN")

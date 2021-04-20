@@ -308,6 +308,9 @@ func AddHookIssue(issueData *models.IssuePayload) {
 				return
 			}
 		}
+		hdcTaskLabel := beego.AppConfig.String("hdc_task")
+		eulerToken := beego.AppConfig.String("repo::git_token")
+		EditLabel(repoPath, issueNumber, hdcTaskLabel, eulerToken, owner, eoi)
 	}
 }
 
