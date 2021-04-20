@@ -407,10 +407,10 @@ func (c *GaussHookEventControllers) handlePullReq() {
 	//	}
 	//}
 	if prHook.Action == "open" {
-		taskhandler.AddHookGaussPr(&prHook)
+		taskhandler.AddHookGaussPr(&prHook, 1)
 	}
 	if prHook.Action == "update" {
-		taskhandler.AddHookGaussPr(&prHook)
+		taskhandler.AddHookGaussPr(&prHook, 2)
 	}
 	if prHook.Action == "closed" {
 		//taskhandler.DelHookGaussIssue(&issueHook)

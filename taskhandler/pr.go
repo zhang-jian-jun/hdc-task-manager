@@ -44,7 +44,7 @@ func UpdatePrAssignee(prHook models.PrPayload) {
 }
 
 // AddPr Add pr
-func AddHookGaussPr(prData *models.PrPayload) {
+func AddHookGaussPr(prData *models.PrPayload, openFlag int) {
 	gaussToken := os.Getenv("GITEE_GAUSS_TOKEN")
 	prNumber := prData.PullRequest.Number
 	repoPath := common.TrimString(prData.Repository.Path)
@@ -68,35 +68,37 @@ func AddHookGaussPr(prData *models.PrPayload) {
 			return
 		}
 	}
-	// Create user information
-	userId := StoreGitGaussUser(prData.PullRequest.User.Login, prData.PullRequest.User.Email)
-	if userId > 0 {
-		et := GaussIssueUserRecordTp{UserId: userId, OrId: gop.OrId,
-			IssueNumber: strconv.FormatInt(gop.PrNumber, 10),
-			RepoPath:    gop.RepoPath, Owner: owner, Status: 2, Type: 2}
-		GaussIssueUserRecord(et)
-		// Create the correspondence between users and pr, as well as user points information
-		GaussIssueUser(userId, gop.OrId, strconv.FormatInt(gop.PrNumber, 10), gop.RepoPath, gop.Owner, 2)
-		// Calculate the points earned by users
-		CreateUserPoints(userId, gop.OrId, 0, 2)
-		hdcGaussLabel := beego.AppConfig.String("hdc_gauss_label")
-		if len(gop.PrLabel) > 1 && strings.Contains(strings.ToLower(gop.PrLabel), hdcGaussLabel) {
-			// Will write issue comments
-			igc := fmt.Sprintf(PrGaussComment, prData.PullRequest.User.Login)
-			AddCommentToPr(igc, owner, prData.Repository.Path, gaussToken, prData.PullRequest.Number)
-			// edit label
-			//hdcGuassLabel := beego.AppConfig.String("hdc_gauss_label")
-			//EditGaussPrLabel(hdcGuassLabel, gaussToken, owner, gop, prData.PullRequest.Number)
-			// Send private message
-			igcs := fmt.Sprintf(PrGaussCommentSend, gop.GitUrl)
-			SendPrivateLetters(gaussToken, igcs, prData.PullRequest.User.Login)
-			assigneeStr := beego.AppConfig.String("gauss::assignee")
-			if len(assigneeStr) > 1 {
-				assigneeSlice := strings.Split(assigneeStr, ",")
-				if len(assigneeSlice) > 0 {
-					for _, as := range assigneeSlice {
-						igcs := fmt.Sprintf(PrGaussRewiewSend, prData.PullRequest.User.Login, gop.GitUrl)
-						SendPrivateLetters(gaussToken, igcs, as)
+	if openFlag == 1 {
+		// Create user information
+		userId := StoreGitGaussUser(prData.PullRequest.User.Login, prData.PullRequest.User.Email)
+		if userId > 0 {
+			et := GaussIssueUserRecordTp{UserId: userId, OrId: gop.OrId,
+				IssueNumber: strconv.FormatInt(gop.PrNumber, 10),
+				RepoPath:    gop.RepoPath, Owner: owner, Status: 2, Type: 2}
+			GaussIssueUserRecord(et)
+			// Create the correspondence between users and pr, as well as user points information
+			GaussIssueUser(userId, gop.OrId, strconv.FormatInt(gop.PrNumber, 10), gop.RepoPath, gop.Owner, 2)
+			// Calculate the points earned by users
+			CreateUserPoints(userId, gop.OrId, 0, 2)
+			hdcGaussLabel := beego.AppConfig.String("hdc_gauss_label")
+			if len(gop.PrLabel) > 1 && strings.Contains(strings.ToLower(gop.PrLabel), hdcGaussLabel) {
+				// Will write issue comments
+				igc := fmt.Sprintf(PrGaussComment, prData.PullRequest.User.Login)
+				AddCommentToPr(igc, owner, prData.Repository.Path, gaussToken, prData.PullRequest.Number)
+				// edit label
+				//hdcGuassLabel := beego.AppConfig.String("hdc_gauss_label")
+				//EditGaussPrLabel(hdcGuassLabel, gaussToken, owner, gop, prData.PullRequest.Number)
+				// Send private message
+				igcs := fmt.Sprintf(PrGaussCommentSend, gop.GitUrl)
+				SendPrivateLetters(gaussToken, igcs, prData.PullRequest.User.Login)
+				assigneeStr := beego.AppConfig.String("gauss::assignee")
+				if len(assigneeStr) > 1 {
+					assigneeSlice := strings.Split(assigneeStr, ",")
+					if len(assigneeSlice) > 0 {
+						for _, as := range assigneeSlice {
+							igcs := fmt.Sprintf(PrGaussRewiewSend, prData.PullRequest.User.Login, gop.GitUrl)
+							SendPrivateLetters(gaussToken, igcs, as)
+						}
 					}
 				}
 			}
