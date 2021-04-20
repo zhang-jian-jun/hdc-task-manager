@@ -540,6 +540,16 @@ func EditGaussLabel(number, hdcGuassLabel, gaussToken, owner string, goi models.
 	lalelSlice = append(lalelSlice, hdcGuassLabel)
 	for _, lab := range lalelSlice {
 		if len(labels) > 1 {
+			labSlice := strings.Split(labels, ",")
+			tmpSlice := []string{}
+			for _, lb := range labSlice {
+				if !strings.HasPrefix(lb, "challenge-") {
+					tmpSlice = append(tmpSlice, lb)
+				}
+			}
+			if len(tmpSlice) > 0 {
+				labels = strings.Join(tmpSlice, ",")
+			}
 			if !strings.Contains(labels, lab) {
 				labels = labels + "," + lab
 			}
@@ -563,6 +573,16 @@ func EditGaussPrLabel(hdcGuassLabel, gaussToken, owner string, gop models.GaussO
 	lalelSlice = append(lalelSlice, hdcGuassLabel)
 	for _, lab := range lalelSlice {
 		if len(labels) > 1 {
+			labSlice := strings.Split(labels, ",")
+			tmpSlice := []string{}
+			for _, lb := range labSlice {
+				if !strings.HasPrefix(lb, "challenge-") {
+					tmpSlice = append(tmpSlice, lb)
+				}
+			}
+			if len(tmpSlice) > 0 {
+				labels = strings.Join(tmpSlice, ",")
+			}
 			if !strings.Contains(labels, lab) {
 				labels = labels + "," + lab
 			}
