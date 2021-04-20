@@ -124,6 +124,17 @@ func (c *HookEventControllers) handleIssue() {
 		logs.Error(err)
 		return
 	}
+	cuAccount := issueHook.Sender.Login
+	if cuAccount != "" && len(cuAccount) > 1 {
+		if cuAccount == "openeuler-ci-bot" {
+			logs.Error("openeuler-ci-bot, Ignore this comment")
+			return
+		}
+		if cuAccount == "opengauss-bot" {
+			logs.Error("opengauss-bot, Ignore this comment")
+			return
+		}
+	}
 	hookPwd := beego.AppConfig.String("hook::hookpwd")
 	issueHook.Password = common.TrimString(issueHook.Password)
 	if issueHook.Password != hookPwd {
@@ -154,17 +165,6 @@ func (c *HookEventControllers) handleIssue() {
 		}
 	}
 	if issueHook.Action == "open" {
-		cuAccount := issueHook.Issue.User.Login
-		if cuAccount != "" && len(cuAccount) > 1 {
-			if cuAccount == "openeuler-ci-bot" {
-				logs.Error("openeuler-ci-bot, Ignore this comment")
-				return
-			}
-			if cuAccount == "opengauss-bot" {
-				logs.Error("opengauss-bot, Ignore this comment")
-				return
-			}
-		}
 		eoi := models.EulerOriginIssue{Owner: issueHook.Repository.NameSpace, RepoPath: issueHook.Repository.Path,
 			IssueId: issueHook.Issue.Id, IssueNumber: issueHook.Iid}
 		eiErr := models.QueryEulerOriginIssue(&eoi, "Owner", "RepoPath", "IssueId", "IssueNumber")
@@ -240,7 +240,7 @@ func (c *GaussHookEventControllers) handleIssue() {
 		logs.Error(err)
 		return
 	}
-	cuAccount := issueHook.Issue.User.Login
+	cuAccount := issueHook.Sender.Login
 	if cuAccount != "" && len(cuAccount) > 1 {
 		if cuAccount == "openeuler-ci-bot" {
 			logs.Error("openeuler-ci-bot, Ignore this comment")
@@ -357,7 +357,7 @@ func (c *GaussHookEventControllers) handlePullReq() {
 		logs.Error(err)
 		return
 	}
-	cuAccount := prHook.PullRequest.User.Login
+	cuAccount := prHook.Sender.Login
 	if cuAccount != "" && len(cuAccount) > 1 {
 		if cuAccount == "openeuler-ci-bot" {
 			logs.Error("openeuler-ci-bot, Ignore this comment")
