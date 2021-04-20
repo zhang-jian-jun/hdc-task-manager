@@ -90,6 +90,7 @@ const (
 	GaussMediumCmd = "/challenge-medium"
 	GaussLowCmd    = "/challenge-low"
 	GaussZeroCmd   = "/challenge-zero"
+	GaussLabelCmd  = "/hdc-p-challenge"
 )
 
 var (

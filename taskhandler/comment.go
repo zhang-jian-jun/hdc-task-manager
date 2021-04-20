@@ -630,7 +630,10 @@ func HandleGaussIssueComment(payload models.CommentPayload) {
 	}
 	gaussToken := os.Getenv("GITEE_GAUSS_TOKEN")
 	issuePointStr := beego.AppConfig.String("gauss::issue_point")
-	if strings.HasPrefix(cBody, GaussHighCmd) {
+	if strings.HasPrefix(cBody, GaussLabelCmd) {
+		hdcGuassLabel := strings.ReplaceAll(GaussLabelCmd, "/", "")
+		EditGaussLabel(issueNumber, hdcGuassLabel, gaussToken, owner, goi)
+	} else if strings.HasPrefix(cBody, GaussHighCmd) {
 		// first-claimed task
 		userId, pointValue := AddGaussUserPoints(gaussToken, issuePointStr,
 			GaussHighCmd, goi.IssueCreate, goi.GitUrl, goi.OrId)
@@ -877,7 +880,10 @@ func HandleGaussPrComment(payload models.CommentPayload) {
 	}
 	gaussToken := os.Getenv("GITEE_GAUSS_TOKEN")
 	issuePointStr := beego.AppConfig.String("gauss::pr_point")
-	if strings.HasPrefix(cBody, GaussHighCmd) {
+	if strings.HasPrefix(cBody, GaussLabelCmd) {
+		hdcGuassLabel := strings.ReplaceAll(GaussLabelCmd, "/", "")
+		EditGaussPrLabel(hdcGuassLabel, gaussToken, owner, gop, prNumber)
+	} else if strings.HasPrefix(cBody, GaussHighCmd) {
 		// first-claimed task
 		userId, pointValue := AddGaussUserPoints(gaussToken, issuePointStr,
 			GaussHighCmd, gop.PrCreate, gop.GitUrl, gop.OrId)
