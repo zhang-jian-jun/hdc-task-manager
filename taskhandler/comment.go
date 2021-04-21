@@ -297,6 +297,10 @@ func AssignCloseIssue(payload models.CommentPayload, eulerToken, owner string, e
 			logs.Error("UpdateIssueToGit, upErr: ", upErr)
 			return
 		}
+		// Calculate the points earned by users
+		pointLock.Lock()
+		CalculateUserPoints(eulerToken, eoi)
+		pointLock.Unlock()
 		// Modify data status
 		eoi.IssueState = IssueCloseState
 		upIssueErr := models.UpdateEulerOriginIssue(&eoi, "IssueState")
