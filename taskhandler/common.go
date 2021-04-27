@@ -132,20 +132,20 @@ func SendPrivateLetters(access, content, useName string) {
 	logs.Info("Send private message:", res)
 }
 
-//ChangeIssueLabel update  issue label
-func ChangeIssueLabel(token, repo, issueNum, owner, label string) bool {
-	url := fmt.Sprintf("https://gitee.com/api/v5/repos/%s/issues/%s", owner, issueNum)
-	param := struct {
-		AccessToken string `json:"access_token"`
-		Repo        string `json:"repo"`
-		Label       string `json:"labels"`
-	}{token, repo, label}
-	pj, err := json.Marshal(&param)
+func UpdateIssueLabels(token, repo, issueNum, owner, label string) bool {
+	url := fmt.Sprintf("https://gitee.com/api/v5/repos/%v/%v/issues/%v/labels?access_token=%v", owner, repo, issueNum, token)
+	reqBody := fmt.Sprintf("[\"%v\"]", label)
+	logs.Info("UpdateIssueLabels, reqBody: ", reqBody)
+	resp, err := util.HTTPPut(url, reqBody)
 	if err != nil {
-		logs.Error(err)
+		logs.Error("UpdateIssueLabels, Failed to update label, url: ", url, ", err: ", err)
 		return false
 	}
-	return UpdateGiteIssue(url, pj)
+	if _, ok := resp[0]["id"]; !ok {
+		logs.Error("UpdateIssueLabels, Failed to update label, err: ", ok, ", url: ", url)
+		return false
+	}
+	return true
 }
 
 //ChangePrLabel update  pr label

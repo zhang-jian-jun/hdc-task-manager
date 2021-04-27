@@ -560,7 +560,7 @@ func EditGaussLabel(number, hdcGuassLabel, gaussToken, owner string, goi models.
 			labels = lab
 		}
 	}
-	ChangeIssueLabel(gaussToken, goi.RepoPath, number, owner, labels)
+	UpdateIssueLabels(gaussToken, goi.RepoPath, number, owner, labels)
 	goi.IssueLabel = labels
 	goi.UpdateTime = common.GetCurTime()
 	upErr := models.UpdateGaussOriginIssue(&goi, "IssueLabel", "UpdateTime")

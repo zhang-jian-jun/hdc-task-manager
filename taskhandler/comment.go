@@ -529,7 +529,7 @@ func EditLabel(issuePath, issueNumber, hdcTaskAssign, eulerToken, owner string, 
 	} else {
 		labels = hdcTaskAssign
 	}
-	ChangeIssueLabel(eulerToken, issuePath, issueNumber, owner, labels)
+	UpdateIssueLabels(eulerToken, issuePath, issueNumber, owner, labels)
 	eoi.IssueLabel = labels
 	eoi.UpdateTime = common.GetCurTime()
 	upErr := models.UpdateEulerOriginIssue(&eoi, "IssueLabel", "UpdateTime")
