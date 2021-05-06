@@ -238,9 +238,9 @@ func SendEmail(attchStr string, flag int, cBody, subject string) error {
 		}
 		emailError = mail.Send(message)
 		if emailError == nil {
-			logs.Info("Notify issue statistics that the email was sent successfully!")
+			logs.Info("Notify issue statistics that the email was sent successfully! attchStr: ", attchStr)
 		} else {
-			logs.Error("Notify issue statistics mail delivery failure!")
+			logs.Error("Notify issue statistics mail delivery failure! attchStr: ", attchStr)
 		}
 	}
 	return emailError
