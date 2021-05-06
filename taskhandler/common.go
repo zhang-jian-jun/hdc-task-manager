@@ -133,8 +133,19 @@ func SendPrivateLetters(access, content, useName string) {
 }
 
 func UpdateIssueLabels(token, repo, issueNum, owner, label string) bool {
+	labelStr := label
+	labelSlice := strings.Split(label, ",")
+	if len(labelSlice) > 0 {
+		laSlice := []string{}
+		for _, la := range labelSlice {
+			laSlice = append(laSlice, fmt.Sprintf("\"%v\"", la))
+		}
+		if len(laSlice) > 0 {
+			labelStr = strings.Join(laSlice, ",")
+		}
+	}
 	url := fmt.Sprintf("https://gitee.com/api/v5/repos/%v/%v/issues/%v/labels?access_token=%v", owner, repo, issueNum, token)
-	reqBody := fmt.Sprintf("[\"%v\"]", label)
+	reqBody := fmt.Sprintf("[%v]", labelStr)
 	logs.Info("UpdateIssueLabels, reqBody: ", reqBody)
 	resp, err := util.HTTPPut(url, reqBody)
 	if err != nil {
