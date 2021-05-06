@@ -162,14 +162,14 @@ func SendGaussExcel(zipFileName, startTime, endTime string, flag int) {
 	if flag == 1 {
 		cBody := fmt.Sprintf("hi all: \r\n 附件中有两个excel文件分别为: openGauss积分挑战赛-参赛者周(%s~%s)积分统计和总积分统计, 请查收. \r\n", startTime, endTime)
 		subject := fmt.Sprintf("HDC-openGauss积分挑战赛-参赛者周(%s~%s)积分和总积分统计", startTime, endTime)
-		sendError := SendEmail(zipFileName, 1, cBody, subject)
+		sendError := SendEmail(zipFileName, 2, cBody, subject)
 		if sendError != nil {
 			logs.Error("SendEmail, sendErr: ", sendError)
 		}
 	} else {
 		cBody := fmt.Sprintf("hi all: \r\n 附件中有两个excel文件分别为: openGauss积分挑战赛-参赛者月(%s~%s)积分统计和总积分统计, 请查收. \r\n", startTime, endTime)
 		subject := fmt.Sprintf("HDC-openGauss积分挑战赛-参赛者月(%s~%s)积分和总积分统计", startTime, endTime)
-		sendError := SendEmail(zipFileName, 1, cBody, subject)
+		sendError := SendEmail(zipFileName, 2, cBody, subject)
 		if sendError != nil {
 			logs.Error("SendEmail, sendErr: ", sendError)
 		}
