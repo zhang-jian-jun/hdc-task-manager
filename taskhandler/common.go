@@ -141,9 +141,11 @@ func UpdateIssueLabels(token, repo, issueNum, owner, label string) bool {
 		logs.Error("UpdateIssueLabels, Failed to update label, url: ", url, ", err: ", err)
 		return false
 	}
-	if _, ok := resp[0]["id"]; !ok {
-		logs.Error("UpdateIssueLabels, Failed to update label, err: ", ok, ", url: ", url)
-		return false
+	if len(resp) > 0 {
+		if _, ok := resp[0]["id"]; !ok {
+			logs.Error("UpdateIssueLabels, Failed to update label, err: ", ok, ", url: ", url)
+			return false
+		}
 	}
 	return true
 }
