@@ -8,6 +8,7 @@ import (
 	"hdc-task-manager/common"
 	"hdc-task-manager/models"
 	"path/filepath"
+	"time"
 )
 
 // Start the integration task
@@ -29,6 +30,7 @@ func GetMonthPointsTask(exportMPoint string) {
 func DealWeekPointStart() error {
 	// 1. Calculate openEuler points
 	CalculateOpenEulerPoint(1)
+	time.Sleep(time.Second * 120)
 	//2. Calculate openGauss points
 	CalculateOpenGaussPoint(1)
 	return nil
@@ -38,6 +40,7 @@ func DealWeekPointStart() error {
 func DealMonthPointStart() error {
 	// 1. Calculate openEuler points
 	CalculateOpenEulerPoint(2)
+	time.Sleep(time.Second * 120)
 	//2. Calculate openGauss points
 	CalculateOpenGaussPoint(2)
 	return nil
