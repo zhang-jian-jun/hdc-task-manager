@@ -8,11 +8,14 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize/v2"
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/logs"
+	"gopkg.in/gomail.v2"
 	"hdc-task-manager/models"
 	"io"
 	"io/ioutil"
+	"mime"
 	"net/smtp"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -189,11 +192,12 @@ func DelFile(fileList []string) {
 }
 
 func SendEmail(attchStr string, flag int, cBody, subject string) error {
-	var mail Mail
-	emailName := beego.AppConfig.String("email::email_name")
-	emailPwd := beego.AppConfig.String("email::email_pwd")
-	emailHost := beego.AppConfig.String("email::email_host")
-	emailPort := beego.AppConfig.String("email::email_port")
+	//var mail Mail
+	//emailName := beego.AppConfig.String("email::email_name")
+	//emailPwd := beego.AppConfig.String("email::email_pwd")
+	//emailHost := beego.AppConfig.String("email::email_host")
+	//emailPort := beego.AppConfig.String("email::email_port")
+	//emailPwd = ""
 	SendTypeStr := ""
 	if flag == 1 {
 		SendTypeStr = beego.AppConfig.String("email::openeuler_send_type")
@@ -221,23 +225,30 @@ func SendEmail(attchStr string, flag int, cBody, subject string) error {
 	}
 	//_, attchName := filepath.Split(attchStr)
 	emailError := error(nil)
-	mail = &SendMail{user: emailName, password: emailPwd, host: emailHost, port: emailPort}
+	//mail = &SendMail{user: emailName, password: emailPwd, host: emailHost, port: emailPort}
 	if len(toEmail) > 0 {
-		message := Message{from: emailName,
-			to:          toEmail,
-			cc:          ccEmail,
-			bcc:         []string{},
-			subject:     subject,
-			body:        cBody,
-			contentType: "text/plain;charset=utf-8",
-			attachment: Attachment{
-				name:        attchStr,
-				contentType: "text/plain",
-				withFile:    true,
-			},
-		}
-		emailError = mail.Send(message)
-		if emailError == nil {
+		//message := Message{from: emailName,
+		//	to:          toEmail,
+		//	cc:          ccEmail,
+		//	bcc:         []string{},
+		//	subject:     subject,
+		//	body:        cBody,
+		//	contentType: "text/plain;charset=utf-8",
+		//	attachment: Attachment{
+		//		name:        attchStr,
+		//		contentType: "text/plain",
+		//		withFile:    true,
+		//	},
+		//}
+		//emailError = mail.Send(message)
+		//if emailError == nil {
+		//	logs.Info("Notify issue statistics that the email was sent successfully! attchStr: ", attchStr)
+		//} else {
+		//	logs.Error("Notify issue statistics mail delivery failure! attchStr: ", attchStr)
+		//}
+
+		sendErr := SendCommonMail(toEmail, ccEmail, subject, cBody, attchStr)
+		if sendErr == nil {
 			logs.Info("Notify issue statistics that the email was sent successfully! attchStr: ", attchStr)
 		} else {
 			logs.Error("Notify issue statistics mail delivery failure! attchStr: ", attchStr)
@@ -372,4 +383,38 @@ func PathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+func SendCommonMail(mailTo, mailCc []string, subject string, body, attchName string) error {
+	emailName := beego.AppConfig.String("email::email_name")
+	emailPwd := beego.AppConfig.String("email::email_pwd")
+	emailHost := beego.AppConfig.String("email::email_host")
+	emailPwd = ""
+	emailPort := beego.AppConfig.String("email::email_port")
+	mailConn := map[string]string{
+		"user": emailName,
+		"pass": emailPwd,
+		"host": emailHost,
+		"port": emailPort,
+	}
+	port, _ := strconv.Atoi(mailConn["port"])
+	m := gomail.NewMessage()
+	m.SetHeader("From", "cve-manager"+"<"+mailConn["user"]+">")
+	m.SetHeader("To", mailTo...)
+	m.SetHeader("Cc", mailCc...)
+	m.SetHeader("Subject", subject)
+	m.SetBody("text/plain", body)
+	//m.Attach(attchName)
+	_, fileName := filepath.Split(attchName)
+	m.Attach(attchName,
+		gomail.Rename(fileName),
+		gomail.SetHeader(map[string][]string{
+			"Content-Disposition": []string{
+				fmt.Sprintf(`attachment; filename="%s"`, mime.QEncoding.Encode("UTF-8", fileName)),
+			},
+		}),
+	)
+	d := gomail.NewDialer(mailConn["host"], port, mailConn["user"], mailConn["pass"])
+	err := d.DialAndSend(m)
+	return err
 }
