@@ -628,7 +628,7 @@ func HandleGaussIssueComment(payload models.CommentPayload) {
 		return
 	}
 	assignFlag := reviewIsvalid(cuAccount)
-	if !assignFlag && cuAccount != goi.IssueAssignee {
+	if !strings.HasPrefix(cBody, GaussLabelCmd) && !assignFlag && cuAccount != goi.IssueAssignee {
 		logs.Error("Invalid comment, discard, body: ", cBody, ", cuAccount: ", cuAccount)
 		return
 	}
@@ -878,7 +878,7 @@ func HandleGaussPrComment(payload models.CommentPayload) {
 		return
 	}
 	assignFlag := reviewIsvalid(cuAccount)
-	if !assignFlag && gop.PrAssignee != cuAccount {
+	if !strings.HasPrefix(cBody, GaussLabelCmd) && !assignFlag && gop.PrAssignee != cuAccount {
 		logs.Error("Invalid comment, discard, body: ", cBody, ", cuAccount: ", cuAccount)
 		return
 	}
