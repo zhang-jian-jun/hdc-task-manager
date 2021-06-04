@@ -41,7 +41,8 @@ func GetLastMonthDate() (string, string) {
 	year, month, _ := time.Now().Date()
 	thisMonth := time.Date(year, month, 1, 0, 0, 0, 0, time.Local)
 	start := thisMonth.AddDate(0, -1, 0).Format(DATE_FORMAT)
-	end := thisMonth.AddDate(0, 0, -1).Format(DATE_FORMAT)
+	// days = -1 last data || days = 0 first data
+	end := thisMonth.AddDate(0, 0, 0).Format(DATE_FORMAT)
 	timeRange := fmt.Sprintf("startTime~endTime: %s~%s", start, end)
 	logs.Info(timeRange)
 	return start, end
