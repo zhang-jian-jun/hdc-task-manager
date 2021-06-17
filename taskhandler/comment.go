@@ -159,7 +159,7 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 		case IssueOpenState:
 			// Non-reviewers, cannot modify the status of the issue
 			if eoi.IssueAssignee != issueHook.Sender.Login {
-				is := fmt.Sprintf(IssueStateProc, issueHook.Issue.User.Login)
+				is := fmt.Sprintf(IssueStateProc, issueHook.Sender.UserName)
 				AddCommentToIssue(is, issueHook.Issue.Number, owner, issueHook.Repository.Path, eulerToken)
 				upErr := UpdateIssueToGit(eulerToken, owner, repoPath, eoi.IssueState, eoi)
 				if upErr != nil {
@@ -174,7 +174,7 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 		case IssueProgressState:
 			// Non-reviewers, cannot modify the status of the issue
 			if eoi.IssueAssignee != issueHook.Sender.Login {
-				is := fmt.Sprintf(IssueStateProc, issueHook.Issue.User.Login)
+				is := fmt.Sprintf(IssueStateProc, issueHook.Sender.UserName)
 				AddCommentToIssue(is, issueHook.Issue.Number, owner, issueHook.Repository.Path, eulerToken)
 				upErr := UpdateIssueToGit(eulerToken, owner, repoPath, eoi.IssueState, eoi)
 				if upErr != nil {
@@ -189,7 +189,7 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 		case IssueCloseState:
 			// Non-reviewers, cannot modify the status of the issue
 			if eoi.IssueAssignee != issueHook.Sender.Login {
-				is := fmt.Sprintf(IssueStateProc, issueHook.Issue.User.Login)
+				is := fmt.Sprintf(IssueStateProc, issueHook.Sender.UserName)
 				AddCommentToIssue(is, issueHook.Issue.Number, owner, issueHook.Repository.Path, eulerToken)
 				upErr := UpdateIssueToGit(eulerToken, owner, repoPath, "open", eoi)
 				if upErr != nil {
@@ -210,7 +210,7 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 		case IssueRejectState:
 			// Non-reviewers, cannot modify the status of the issue
 			if eoi.IssueAssignee != issueHook.Sender.Login {
-				is := fmt.Sprintf(IssueStateProc, issueHook.Issue.User.Login)
+				is := fmt.Sprintf(IssueStateProc, issueHook.Sender.UserName)
 				AddCommentToIssue(is, issueHook.Issue.Number, owner, issueHook.Repository.Path, eulerToken)
 				upErr := UpdateIssueToGit(eulerToken, owner, repoPath, eoi.IssueState, eoi)
 				if upErr != nil {
