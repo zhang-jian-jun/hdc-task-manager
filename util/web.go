@@ -113,7 +113,7 @@ func HTTPPut(url string, requestBody string) ([]map[string]interface{}, error) {
 	}
 	body, err := ioutil.ReadAll(resp.Body)
 	fmt.Println("response Body:", string(body))
-	if err != nil || body == nil{
+	if err != nil || body == nil {
 		logs.Error("PUT failed, err: ", err, "body: ", requestBody)
 		return nil, err
 	}

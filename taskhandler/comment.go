@@ -45,11 +45,13 @@ func CreateIssueBody(eulerToken, path, statusName string, eoi models.EulerOrigin
 func UpdateIssueToGit(eulerToken, owner, path, issueState string, eoi models.EulerOriginIssue) error {
 	if eulerToken != "" && owner != "" && path != "" {
 		url := "https://gitee.com/api/v5/repos/" + owner + "/issues/" + eoi.IssueNumber
+		url1 := "http://gitee.com/api/v5/repos/" + owner + "/issues/" + eoi.IssueNumber
 		statusName := IssueStateRev(issueState)
 		requestBody := CreateIssueBody(eulerToken, path, statusName, eoi)
 		logs.Info("UpdateIssueToGit, isssue_body: ", requestBody)
 		if requestBody != "" && len(requestBody) > 1 {
-			resp, err := util.HTTPPatch(url, requestBody)
+			resp, err := util.HTTPPatch(url1, requestBody)
+			resp, err = util.HTTPPatch(url, requestBody)
 			if err != nil {
 				logs.Error("UpdateIssueToGit, Update issue failed, issueNum: ", eoi.IssueNumber, "err: ", err)
 				return errors.New("Failed to call gitee to update the issue interface")
