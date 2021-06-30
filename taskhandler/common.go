@@ -56,7 +56,12 @@ const (
 	IssueGiveUpSuccessSend = `%v, 此任务您已取消, 可以继续认领其他任务.`
 	IssueStateProc         = `@%v, 此issue状态, 只能由issue责任人改变, 如需改变, 请先变更issue责任人.`
 	// After earning points, send a private message
-	IssuePointSend = `您提交的任务: %v 已审核通过, 当前任务获得的积分为: %v分.`
+	IssuePointSend            = `您提交的任务: %v 已审核通过, 当前任务获得的积分为: %v分.`
+	IssueBlackSend            = `您认领的任务: %v 已取消, 请知晓.`
+	IssueBlackClaimFailure    = `@%v, 您无法认领此任务, 请知晓.`
+	IssueUnassignClaimCount   = `@%v, 由于您取消任务次数已达到上线, 账号已被冻结, 待账号解冻后才能继续操作.`
+	IssueForciGiveUpSuccess   = `@%v, 由于您长期未完成此任务, 系统已为您取消此任务.`
+	IssueUncompleteClaimCount = `由于参赛者: @%v 取消任务次数已达到上线, 账号已被冻结, 待账号解冻后才能继续操作.`
 )
 
 const (

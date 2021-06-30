@@ -122,6 +122,25 @@ func QueryGaussOriginIssue(eoi *GaussOriginIssue, field ...string) error {
 	return err
 }
 
+func QueryEulerUserUnassigned(euu *EulerUnassignUser, field ...string) error {
+	o := orm.NewOrm()
+	err := o.Read(euu, field...)
+	return err
+}
+
+// insert data
+func InsertEulerUserUnassigned(euu *EulerUnassignUser) (int64, error) {
+	o := orm.NewOrm()
+	id, err := o.Insert(euu)
+	return id, err
+}
+
+func UpdateEulerUserUnassigned(euu *EulerUnassignUser, fields ...string) error {
+	o := orm.NewOrm()
+	_, err := o.Update(euu, fields...)
+	return err
+}
+
 // insert data
 func InsertGaussOriginIssue(eoi *GaussOriginIssue) (int64, error) {
 	o := orm.NewOrm()
@@ -234,3 +253,4 @@ func UpdateGaussIssuePrComplate(eiu *GaussIssuePrComplate, fields ...string) err
 	_, err := o.Update(eiu, fields...)
 	return err
 }
+

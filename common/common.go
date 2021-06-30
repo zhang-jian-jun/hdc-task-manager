@@ -65,3 +65,11 @@ func TimeToLocal(times, layout string) string {
 	}
 	return t.Format(DATE_FORMAT)
 }
+
+func GetAfterTime(days int) string {
+	nowTime := time.Now()
+	getTime := nowTime.AddDate(0, 0, days)
+	resTime := getTime.Format(DATE_FORMAT) // The format of the obtained time
+	logs.Info("Get the number of days：", days, ",Time ago：", resTime)
+	return resTime
+}

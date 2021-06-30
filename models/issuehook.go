@@ -127,6 +127,18 @@ func DeleteEulerIssueUser(eiu *EulerIssueUser, fields ...string) error {
 	return err
 }
 
+func QueryEulerBlackUser(eu *EulerBlackUser, field ...string) error {
+	o := orm.NewOrm()
+	err := o.Read(eu, field...)
+	return err
+}
+
+func UpdateEulerBlackUser(eu *EulerBlackUser, fields ...string) error {
+	o := orm.NewOrm()
+	_, err := o.Update(eu, fields...)
+	return err
+}
+
 func QueryEulerUser(eu *EulerUser, field ...string) error {
 	o := orm.NewOrm()
 	err := o.Read(eu, field...)
@@ -148,7 +160,7 @@ func UpdateEulerUser(eu *EulerUser, fields ...string) error {
 func QueryEulerIssueUserset(uerId int64, status int8) (eiu []EulerIssueUser) {
 	o := orm.NewOrm()
 	num, err := o.Raw("select *"+
-		" from hdc_euler_issue_user where user_id = ? and status = ? order by id desc",
+		" from hdc_euler_issue_user where user_id = ? and status != ? order by id desc",
 		uerId, status).QueryRows(&eiu)
 	if err != nil {
 		logs.Info("QueryEulerIssueUserset, The current user has not claimed the task, err: ", err)

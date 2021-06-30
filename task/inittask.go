@@ -34,5 +34,23 @@ func InitTask() bool {
 		exportMPoint := beego.AppConfig.String("task::exportmpoint")
 		taskhandler.GetMonthPointsTask(exportMPoint)
 	}
+	// openEuler regularly releases tasks in the blacklist
+	relblacklistflag, errxs := beego.AppConfig.Int("task::relblacklistflag")
+	if relblacklistflag == 1 && errxs == nil {
+		relblacklist := beego.AppConfig.String("task::relblacklist")
+		EulerRelBlackTask(relblacklist)
+	}
+	// The number of deleted and cancelled tasks has reached the blacklist of online users
+	relunassignflag, errxs := beego.AppConfig.Int("task::relunassignflag")
+	if relunassignflag == 1 && errxs == nil {
+		relunassign := beego.AppConfig.String("task::relunassign")
+		EulerRelUnassignTask(relunassign)
+	}
+	// Release unsubmitted questions
+	reluncompleteflag, errxs := beego.AppConfig.Int("task::reluncompleteflag")
+	if reluncompleteflag == 1 && errxs == nil {
+		reluncomplete := beego.AppConfig.String("task::reluncomplete")
+		EulerRelUncompleteTask(reluncomplete)
+	}
 	return true
 }

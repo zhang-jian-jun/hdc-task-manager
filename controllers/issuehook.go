@@ -147,7 +147,7 @@ func (c *HookEventControllers) handleIssue() {
 			IssueId: issueHook.Issue.Id, IssueNumber: issueHook.Iid}
 		eiErr := models.QueryEulerOriginIssue(&eoi, "Owner", "RepoPath", "IssueId", "IssueNumber")
 		if eiErr != nil {
-			logs.Error(err)
+			logs.Error(eiErr)
 			return
 		}
 		eoi.IssueAssignee = issueHook.Assignee.Login

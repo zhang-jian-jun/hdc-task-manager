@@ -42,3 +42,42 @@ func GetOriginIssue() error {
 	}
 	return nil
 }
+
+// openEuler regularly releases tasks in the blacklist
+func EulerRelBlackTask(relblacklist string) {
+	logs.Info("releases tasks in the blacklist start...")
+	blackTask := toolbox.NewTask("BlackListTask", relblacklist, BlackListTask)
+	toolbox.AddTask("BlackListTask", blackTask)
+	logs.Info("End of releases tasks in the blacklist...")
+}
+
+func BlackListTask() error {
+	taskhandler.HandBlackListTask()
+	return nil
+}
+
+// The number of deleted and cancelled tasks has reached the blacklist of online users
+func EulerRelUnassignTask(relunassign string) {
+	logs.Info("The number of deleted and canceled tasks has reached the start of the blacklist of online users...")
+	unassignTask := toolbox.NewTask("RelUnassignTask", relunassign, RelUnassignTask)
+	toolbox.AddTask("RelUnassignTask", unassignTask)
+	logs.Info("The number of deleted and canceled tasks has reached the end of the online user blacklist...")
+}
+
+func RelUnassignTask() error {
+	taskhandler.RemoveUnassignBlacklist()
+	return nil
+}
+
+// Release unsubmitted questions
+func EulerRelUncompleteTask(reluncomplete string) {
+	logs.Info("Release uncommitted tasks to start...")
+	uncompleteTask := toolbox.NewTask("RelUncompleteTask", reluncomplete, RelUncompleteTask)
+	toolbox.AddTask("RelUncompleteTask", uncompleteTask)
+	logs.Info("Release uncommitted tasks to end...")
+}
+
+func RelUncompleteTask() error {
+	taskhandler.RemoveUncompleteList()
+	return nil
+}

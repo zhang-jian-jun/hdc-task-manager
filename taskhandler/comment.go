@@ -16,6 +16,9 @@ import (
 
 var pointLock sync.Mutex
 var gaussLock sync.Mutex
+var assignLock sync.Mutex
+var unassignLock sync.Mutex
+var completeLock sync.Mutex
 
 type EulerIssueUserRecordTp struct {
 	UserId      int64
@@ -74,9 +77,9 @@ func UpdateIssueToGit(eulerToken, owner, path, issueState string, eoi models.Eul
 // Calculate the points earned by users
 func CalculateUserPoints(eulerToken string, eoi models.EulerOriginIssue) {
 	// Query user information
-	eiu := models.EulerIssueUser{OrId: eoi.OrId, Status: 1}
-	eiuErr := models.QueryEulerIssueUser(&eiu, "OrId", "Status")
-	if eiuErr != nil {
+	eiu := models.EulerIssueUser{OrId: eoi.OrId}
+	eiuErr := models.QueryEulerIssueUser(&eiu, "OrId")
+	if eiuErr != nil || eiu.Status == 2 {
 		logs.Error("Points cannot be calculated or points have already been calculated, eiuErr: ", eiuErr)
 		return
 	}
@@ -197,6 +200,11 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 				}
 				return errors.New("No operation authority")
 			}
+			eafErr := EulerAccountFreeze(issueHook.Issue.Number, issueHook.Repository.Path, owner, eulerToken, eoi)
+			if eafErr != nil {
+				logs.Error("eafErr: ", eafErr)
+				return eafErr
+			}
 			// Calculate the points earned by users
 			pointLock.Lock()
 			CalculateUserPoints(eulerToken, eoi)
@@ -221,6 +229,31 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 			upErr := UpdateIssueToGit(eulerToken, owner, repoPath, IssueRejectState, eoi)
 			if upErr != nil {
 				logs.Error("UpdateIssueToGit, upErr: ", upErr)
+			}
+		}
+	}
+	return nil
+}
+
+func EulerAccountFreeze(issueNumber, repo, owner, eulerToken string, eoi models.EulerOriginIssue) error {
+	eu := models.EulerIssueUser{OrId: eoi.OrId}
+	euErr := models.QueryEulerIssueUser(&eu, "OrId")
+	if euErr == nil {
+		elu := models.EulerUser{UserId: eu.UserId}
+		qeuErr := models.QueryEulerUser(&elu, "UserId")
+		if qeuErr == nil {
+			vpErr := VerifyEulerUserClaimPerm(elu.GitUserId, issueNumber,
+				repo, eulerToken, owner, eoi, elu.UserId)
+			if vpErr != nil {
+				upErr := UpdateIssueToGit(eulerToken, owner, repo, IssueOpenState, eoi)
+				if upErr != nil {
+					logs.Error("UpdateIssueToGit, upErr: ", upErr)
+					return upErr
+				}
+				is := fmt.Sprintf(IssueUncompleteClaimCount, elu.GitUserId)
+				AddCommentToIssue(is, issueNumber, owner, repo, eulerToken)
+				logs.Error("vpErr: ", vpErr)
+				return vpErr
 			}
 		}
 	}
@@ -273,10 +306,14 @@ func HandleIssueComment(payload models.CommentPayload) {
 			UserClaimTask(payload, eulerToken, owner, eoi)
 		} else if strings.HasPrefix(cBody, hdcCompletedCmd) {
 			// User submits task
+			completeLock.Lock()
 			UserSubmitsTask(payload, eulerToken, owner, eoi)
+			completeLock.Unlock()
 		} else if strings.HasPrefix(cBody, hdcUnassignCmd) {
 			// Give up the task
+			unassignLock.Lock()
 			UserGiveUpTask(payload, eulerToken, owner, eoi)
+			unassignLock.Unlock()
 		} else if strings.HasPrefix(cBody, closeIssueCmd) {
 			// close cmd
 			AssignCloseIssue(payload, eulerToken, owner, eoi)
@@ -292,6 +329,11 @@ func AssignCloseIssue(payload models.CommentPayload, eulerToken, owner string, e
 	}
 	// Non-reviewers, cannot modify the status of the issue
 	if eoi.IssueAssignee == payload.Comment.User.Login {
+		eafErr := EulerAccountFreeze(payload.Issue.Number, payload.Repository.Path, owner, eulerToken, eoi)
+		if eafErr != nil {
+			logs.Error("eafErr: ", eafErr)
+			return
+		}
 		upErr := UpdateIssueToGit(eulerToken, owner, eoi.RepoPath, IssueCloseState, eoi)
 		if upErr != nil {
 			logs.Error("UpdateIssueToGit, upErr: ", upErr)
@@ -316,6 +358,12 @@ func UserGiveUpTask(payload models.CommentPayload, eulerToken, owner string, eoi
 	// Store user information
 	userId := StoreGitUser(payload)
 	if userId > 0 {
+		vpErr := VerifyEulerUserClaimPerm(payload.Comment.User.Login, payload.Issue.Number,
+			payload.Repository.Path, eulerToken, owner, eoi, userId)
+		if vpErr != nil {
+			logs.Error("vpErr: ", vpErr)
+			return
+		}
 		// Determine whether the user denies the task
 		eu := models.EulerIssueUser{OrId: eoi.OrId, UserId: userId}
 		euErr := models.QueryEulerIssueUser(&eu, "OrId", "UserId")
@@ -333,7 +381,7 @@ func UserGiveUpTask(payload models.CommentPayload, eulerToken, owner string, eoi
 				et := EulerIssueUserRecordTp{UserId: userId, OrId: eoi.OrId, IssueNumber: payload.Issue.Number,
 					RepoPath: payload.Repository.Path, Owner: owner, Status: 11}
 				EulerIssueUserRecord(et)
-			} else if eu.Status == 1 && eoi.IssueState != "closed" {
+			} else if (eu.Status == 1 || eu.Status == 3) && eoi.IssueState != "closed" {
 				// give up task
 				delErr := models.DeleteEulerIssueUser(&eu, "UserId", "OrId")
 				if delErr == nil {
@@ -343,6 +391,7 @@ func UserGiveUpTask(payload models.CommentPayload, eulerToken, owner string, eoi
 					EditLabel(payload.Repository.Path, payload.Issue.Number, hdcTask, eulerToken, owner, eoi)
 					is := fmt.Sprintf(IssueGiveUpSuccess, payload.Comment.User.Login)
 					AddCommentToIssue(is, payload.Issue.Number, owner, payload.Repository.Path, eulerToken)
+					AddEulerUserUnassignCount(userId, payload.Comment.User.Login)
 					eir := models.QueryEulerIssueUserRecordset(userId, eoi.OrId, 2)
 					if len(eir) < 1 {
 						iss := fmt.Sprintf(IssueGiveUpSuccessSend, eoi.GitUrl)
@@ -357,11 +406,46 @@ func UserGiveUpTask(payload models.CommentPayload, eulerToken, owner string, eoi
 	}
 }
 
+func AddEulerUserUnassignCount(userId int64, gitId string) {
+	euu := models.EulerUnassignUser{UserId: userId, GitUserId: gitId}
+	_ = models.QueryEulerUserUnassigned(&euu, "UserId", "GitUserId")
+	if euu.Id > 0 {
+		euu.CountValue += 1
+		euu.UpdateTime = common.GetCurTime()
+		issueUnCount := beego.AppConfig.DefaultInt("claimed::issue_unassign_count", 2)
+		if euu.CountValue > int8(issueUnCount) {
+			afterDate, beErr := beego.AppConfig.Int("claimed::issue_unassign_date")
+			if beErr != nil {
+				afterDate = 30
+			}
+			euu.UnassignTime = common.GetAfterTime(afterDate)
+			upErr := models.UpdateEulerUserUnassigned(&euu, "CountValue", "UpdateTime", "UnassignTime")
+			logs.Info("upErr: ", upErr)
+		} else {
+			upErr := models.UpdateEulerUserUnassigned(&euu, "CountValue", "UpdateTime")
+			logs.Info("upErr: ", upErr)
+		}
+	} else {
+		euu.UserId = userId
+		euu.GitUserId = gitId
+		euu.CountValue = 1
+		euu.CreateTime = common.GetCurTime()
+		num, inErr := models.InsertEulerUserUnassigned(&euu)
+		logs.Info("num: ", num, ",inErr: ", inErr)
+	}
+}
+
 // UserSubmitsTask User submits task
 func UserSubmitsTask(payload models.CommentPayload, eulerToken, owner string, eoi models.EulerOriginIssue) {
 	// Store user information
 	userId := StoreGitUser(payload)
 	if userId > 0 {
+		vpErr := VerifyEulerUserClaimPerm(payload.Comment.User.Login, payload.Issue.Number,
+			payload.Repository.Path, eulerToken, owner, eoi, userId)
+		if vpErr != nil {
+			logs.Error("vpErr: ", vpErr)
+			return
+		}
 		// Determine whether the submitted task and the claimed task are the same user
 		eu := models.EulerIssueUser{OrId: eoi.OrId, UserId: userId}
 		euErr := models.QueryEulerIssueUser(&eu, "OrId", "UserId")
@@ -382,7 +466,7 @@ func UserSubmitsTask(payload models.CommentPayload, eulerToken, owner string, eo
 				et := EulerIssueUserRecordTp{UserId: userId, OrId: eoi.OrId, IssueNumber: payload.Issue.Number,
 					RepoPath: payload.Repository.Path, Owner: owner, Status: 9}
 				EulerIssueUserRecord(et)
-			} else if eu.Status == 1 {
+			} else if eu.Status == 1 || eu.Status == 3 {
 				// Edit label
 				hdcTaskRewiew := beego.AppConfig.String("hdc_task_rewiew")
 				EditLabel(payload.Repository.Path, payload.Issue.Number, hdcTaskRewiew, eulerToken, owner, eoi)
@@ -398,6 +482,12 @@ func UserSubmitsTask(payload models.CommentPayload, eulerToken, owner string, eo
 				et := EulerIssueUserRecordTp{UserId: userId, OrId: eoi.OrId, IssueNumber: payload.Issue.Number,
 					RepoPath: payload.Repository.Path, Owner: owner, Status: 3}
 				EulerIssueUserRecord(et)
+				if eu.Status == 1 {
+					eu.Status = 3
+					eu.UpdateTime = common.GetCurTime()
+					upErr := models.UpdateEulerIssueUser(&eu, "Status", "UpdateTime")
+					logs.Info("upErr: ", upErr)
+				}
 			}
 		}
 	}
@@ -407,7 +497,9 @@ func UserClaimTask(payload models.CommentPayload, eulerToken, owner string, eoi 
 	// Store user information
 	userId := StoreGitUser(payload)
 	if userId > 0 {
+		assignLock.Lock()
 		VerifyClaimReq(payload, userId, eulerToken, owner, eoi)
+		assignLock.Unlock()
 	} else {
 		logs.Error("The user cannot claim the current task, the information is wrong, payload: ", payload)
 		is := fmt.Sprintf(IssueClaimWrong, payload.Comment.User.Login)
@@ -443,10 +535,52 @@ func StoreGitUser(payload models.CommentPayload) int64 {
 	}
 }
 
+func VerifyEulerUserClaimPerm(gitId, issueNumber, repo, eulerToken, owner string,
+	eoi models.EulerOriginIssue, userId int64) error {
+	// Verify that it is in the blacklist
+	ebu := models.EulerBlackUser{GitUserId: gitId}
+	_ = models.QueryEulerBlackUser(&ebu, "GitUserId")
+	if ebu.Id > 0 {
+		cc := fmt.Sprintf(IssueBlackClaimFailure, gitId)
+		AddCommentToIssue(cc, issueNumber, owner, repo, eulerToken)
+		et := EulerIssueUserRecordTp{UserId: userId, OrId: eoi.OrId, IssueNumber: issueNumber,
+			RepoPath: repo, Owner: owner, Status: 13}
+		EulerIssueUserRecord(et)
+		return errors.New("Blacklisted users cannot claim tasks")
+	}
+	// Whether the user release task exceeds the limit
+	euu := models.EulerUnassignUser{GitUserId: gitId}
+	if userId > 0 {
+		euu.UserId = userId
+		_ = models.QueryEulerUserUnassigned(&euu, "UserId", "GitUserId")
+	} else {
+		_ = models.QueryEulerUserUnassigned(&euu, "GitUserId")
+	}
+	if euu.Id > 0 {
+		issueUnCount := beego.AppConfig.DefaultInt("claimed::issue_unassign_count", 2)
+		if euu.CountValue > int8(issueUnCount) {
+			cc := fmt.Sprintf(IssueUnassignClaimCount, gitId)
+			AddCommentToIssue(cc, issueNumber, owner, repo, eulerToken)
+			et := EulerIssueUserRecordTp{UserId: userId, OrId: eoi.OrId, IssueNumber: issueNumber,
+				RepoPath: repo, Owner: owner, Status: 14}
+			EulerIssueUserRecord(et)
+			return errors.New("The number of canceled tasks has reached the line, " +
+				"and the task cannot be claimed again")
+		}
+	}
+	return nil
+}
+
 func VerifyClaimReq(payload models.CommentPayload, userId int64, eulerToken, owner string, eoi models.EulerOriginIssue) {
+	vpErr := VerifyEulerUserClaimPerm(payload.Comment.User.Login, payload.Issue.Number,
+		payload.Repository.Path, eulerToken, owner, eoi, userId)
+	if vpErr != nil {
+		logs.Error("vpErr: ", vpErr)
+		return
+	}
 	issueCount := beego.AppConfig.DefaultInt("claimed::issue_count", 3)
 	// Verify whether it is the first-claimed task
-	eiu := models.QueryEulerIssueUserset(userId, 1)
+	eiu := models.QueryEulerIssueUserset(userId, 2)
 	ciaimCount := len(eiu)
 	if ciaimCount >= issueCount {
 		cc := fmt.Sprintf(IssueClaimFailure, payload.Comment.User.Login)
@@ -479,8 +613,14 @@ func StartClaimTask(payload models.CommentPayload, userId int64, eulerToken, own
 	eu := models.EulerIssueUser{OrId: eoi.OrId}
 	euErr := models.QueryEulerIssueUser(&eu, "OrId")
 	if eu.Id == 0 || euErr != nil {
+		untreatedAfterDate, beErr := beego.AppConfig.Int("claimed::issue_Untreated_date")
+		if beErr != nil {
+			untreatedAfterDate = 14
+		}
+		issueUntreatedDate := common.GetAfterTime(untreatedAfterDate)
 		eu = models.EulerIssueUser{OrId: eoi.OrId, UserId: userId, IssueNumber: payload.Issue.Number,
-			RepoPath: payload.Repository.Path, Owner: owner, SendEmail: 1, Status: 1, CreateTime: common.GetCurTime()}
+			RepoPath: payload.Repository.Path, Owner: owner, SendEmail: 1, Status: 1,
+			CreateTime: common.GetCurTime(), AssignTime: issueUntreatedDate}
 		id, inErr := models.InsertEulerIssueUser(&eu)
 		if id > 0 && inErr == nil {
 			et := EulerIssueUserRecordTp{UserId: userId, OrId: eoi.OrId, IssueNumber: payload.Issue.Number,
