@@ -46,3 +46,13 @@ func QueryEulerUncompleteUserAll(afterDate string) (eiu []EulerIssueUser) {
 	}
 	return
 }
+
+func QueryEulerUncompleteUserHistory() (eiu []EulerIssueUser) {
+	o := orm.NewOrm()
+	num, _ := o.Raw("select * from hdc_euler_issue_user where " +
+		"status = ? and assign_time IS NULL", 1).QueryRows(&eiu)
+	if num > 0 {
+		logs.Info("QueryEulerUncompleteUserAll, num: ", num)
+	}
+	return
+}

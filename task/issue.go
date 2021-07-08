@@ -78,6 +78,7 @@ func EulerRelUncompleteTask(reluncomplete string) {
 }
 
 func RelUncompleteTask() error {
+	taskhandler.RemoveUncompleteHistoryList()
 	taskhandler.RemoveUncompleteList()
 	return nil
 }

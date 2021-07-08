@@ -7,6 +7,7 @@ import (
 	"hdc-task-manager/common"
 	"hdc-task-manager/models"
 	"os"
+	"strings"
 )
 
 func ForciblyCancelClaim(owner, eulerToken, gitUserId string, eoi models.EulerOriginIssue, userId int64) {
@@ -129,10 +130,46 @@ func RemoveUncompleteList() {
 			}
 			eoi, eiErr := GetIssueInfo(ei.OrId)
 			if eiErr != nil {
-				logs.Error("issue information query failed, euErr: ", euErr)
+				logs.Error("issue information query failed, eiErr: ", eiErr)
 				continue
 			}
 			ForciblyCancelClaim(eoi.Owner, eulerToken, eu.GitUserId, eoi, eu.UserId)
 		}
 	}
+}
+
+func RemoveUncompleteHistoryList() {
+	eiu := models.QueryEulerUncompleteUserHistory()
+	if len(eiu) > 0 {
+		for _, ei := range eiu {
+			eoi, eiErr := GetIssueInfo(ei.OrId)
+			if eiErr != nil {
+				logs.Error("issue information query failed, eiErr: ", eiErr)
+				continue
+			}
+			labBool := AddUserAssignTime(eoi.IssueLabel)
+			if !labBool {
+				ei.AssignTime = ei.CreateTime
+				ei.UpdateTime = common.GetCurTime()
+				eiErr := models.UpdateEulerIssueUser(&ei, "AssignTime", "UpdateTime")
+				if eiErr != nil {
+					logs.Error("eiErr: ", eiErr)
+				}
+			}
+		}
+	}
+}
+
+func AddUserAssignTime(label string) bool {
+	if len(label) > 1 {
+		labelList := strings.Split(label, ",")
+		if len(labelList) > 0 {
+			for _, la := range labelList {
+				if la == "hdc-task-rewiew" {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }

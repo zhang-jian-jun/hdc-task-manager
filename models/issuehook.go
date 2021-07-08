@@ -42,34 +42,35 @@ func DeleteEulerOriginIssueAll(eoi *EulerOriginIssue) (int64, error) {
 	o := orm.NewOrm()
 	errs := o.Begin()
 	userId := int64(0)
+	orId := eoi.OrId
 	if errs == nil {
 		if num, err := o.Delete(eoi, "OrId"); err == nil {
-			logs.Info("delete hdc_euler_origin_issue success, num: ", num, ",orId: ", eoi.OrId)
+			logs.Info("delete hdc_euler_origin_issue success, num: ", num, ",orId: ", orId)
 		} else {
-			logs.Error("delete hdc_euler_origin_issue failed,", ",orId: ", eoi.OrId, ", err: ", err)
+			logs.Error("delete hdc_euler_origin_issue failed,", ",orId: ", orId, ", err: ", err)
 			o.Rollback()
 			return userId, err
 		}
 		var eu EulerIssueUser
-		eu.OrId = eoi.OrId
+		eu.OrId = orId
 		if num, err := o.Delete(&eu, "OrId"); err == nil {
-			logs.Info("delete hdc_euler_issue_user success, num: ", num, ",orId: ", eu.OrId)
+			logs.Info("delete hdc_euler_issue_user success, num: ", num, ",orId: ", orId)
 		} else {
-			logs.Error("delete hdc_euler_issue_user failed,", ",orId: ", eu.OrId, ", err: ", err)
+			logs.Error("delete hdc_euler_issue_user failed,", ",orId: ", orId, ", err: ", err)
 			o.Rollback()
 			return userId, err
 		}
 		var euc EulerIssueUserComplate
-		euc.OrId = eoi.OrId
+		euc.OrId = orId
 		if num, err := o.Delete(&euc, "OrId"); err == nil {
-			logs.Info("delete hdc_euler_issue_user_complate success, num: ", num, ",orId: ", eu.OrId)
+			logs.Info("delete hdc_euler_issue_user_complate success, num: ", num, ",orId: ", orId)
 		} else {
-			logs.Error("delete hdc_euler_issue_user_complate failed,", ",orId: ", eu.OrId, ", err: ", err)
+			logs.Error("delete hdc_euler_issue_user_complate failed,", ",orId: ", orId, ", err: ", err)
 			o.Rollback()
 			return userId, err
 		}
 		var eid EulerUserIntegDetail
-		eid.OrId = eoi.OrId
+		eid.OrId = orId
 		eidErr := QueryEulerUserIntegDetail(&eid, "OrId")
 		if eidErr == nil {
 			userId = eid.UserId
@@ -90,9 +91,9 @@ func DeleteEulerOriginIssueAll(eoi *EulerOriginIssue) (int64, error) {
 				}
 			}
 			if num, err := o.Delete(&eid, "OrId", "UserId"); err == nil {
-				logs.Info("delete hdc_euler_user_integ_detail success, num: ", num, ",orId: ", eid.OrId)
+				logs.Info("delete hdc_euler_user_integ_detail success, num: ", num, ",orId: ", orId)
 			} else {
-				logs.Error("delete hdc_euler_user_integ_detail failed,", ",orId: ", eid.OrId, ", err: ", err)
+				logs.Error("delete hdc_euler_user_integ_detail failed,", ",orId: ", orId, ", err: ", err)
 				o.Rollback()
 				return 0, err
 			}
