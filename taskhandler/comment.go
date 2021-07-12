@@ -229,7 +229,16 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 			upErr := UpdateIssueToGit(eulerToken, owner, repoPath, IssueRejectState, eoi)
 			if upErr != nil {
 				logs.Error("UpdateIssueToGit, upErr: ", upErr)
+				return upErr
 			}
+			userId, delErr := models.DeleteEulerOriginIssueAll(&eoi)
+			if delErr != nil {
+				logs.Error("DeleteEulerOriginIssueAll, Data deletion failed, delErr: ", delErr)
+				return delErr
+			}
+			et := EulerIssueUserRecordTp{UserId: userId, OrId: eoi.OrId, IssueNumber: eoi.IssueNumber,
+				RepoPath: eoi.RepoPath, Owner: owner, Status: 12}
+			EulerIssueUserRecord(et)
 		}
 	}
 	return nil
