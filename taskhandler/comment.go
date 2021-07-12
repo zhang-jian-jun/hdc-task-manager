@@ -226,12 +226,17 @@ func HandleIssueStateChange(issueHook *models.IssuePayload) error {
 				}
 				return errors.New("No operation authority")
 			}
-			upErr := UpdateIssueToGit(eulerToken, owner, repoPath, IssueRejectState, eoi)
-			if upErr != nil {
-				logs.Error("UpdateIssueToGit, upErr: ", upErr)
-				return upErr
+			//upErr := UpdateIssueToGit(eulerToken, owner, repoPath, IssueRejectState, eoi)
+			//if upErr != nil {
+			//	logs.Error("UpdateIssueToGit, upErr: ", upErr)
+			//	return upErr
+			//}
+			eoi.IssueState = IssueRejectState
+			upIssueErr := models.UpdateEulerOriginIssue(&eoi, "IssueState")
+			if upIssueErr != nil {
+				logs.Error("UpdateEulerOriginIssue, upIssueErr: ", upIssueErr)
 			}
-			userId, delErr := models.DeleteEulerOriginIssueAll(&eoi)
+			userId, delErr := models.RejectEulerOriginIssueAll(&eoi)
 			if delErr != nil {
 				logs.Error("DeleteEulerOriginIssueAll, Data deletion failed, delErr: ", delErr)
 				return delErr

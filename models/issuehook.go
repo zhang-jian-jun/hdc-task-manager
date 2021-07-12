@@ -103,6 +103,64 @@ func DeleteEulerOriginIssueAll(eoi *EulerOriginIssue) (int64, error) {
 	return userId, nil
 }
 
+func RejectEulerOriginIssueAll(eoi *EulerOriginIssue) (int64, error) {
+	o := orm.NewOrm()
+	errs := o.Begin()
+	userId := int64(0)
+	orId := eoi.OrId
+	if errs == nil {
+		var eu EulerIssueUser
+		eu.OrId = orId
+		if num, err := o.Delete(&eu, "OrId"); err == nil {
+			logs.Info("delete hdc_euler_issue_user success, num: ", num, ",orId: ", orId)
+		} else {
+			logs.Error("delete hdc_euler_issue_user failed,", ",orId: ", orId, ", err: ", err)
+			o.Rollback()
+			return userId, err
+		}
+		var euc EulerIssueUserComplate
+		euc.OrId = orId
+		if num, err := o.Delete(&euc, "OrId"); err == nil {
+			logs.Info("delete hdc_euler_issue_user_complate success, num: ", num, ",orId: ", orId)
+		} else {
+			logs.Error("delete hdc_euler_issue_user_complate failed,", ",orId: ", orId, ", err: ", err)
+			o.Rollback()
+			return userId, err
+		}
+		var eid EulerUserIntegDetail
+		eid.OrId = orId
+		eidErr := QueryEulerUserIntegDetail(&eid, "OrId")
+		if eidErr == nil {
+			userId = eid.UserId
+			var eic EulerUserIntegCount
+			eic.UserId = eid.UserId
+			eicErr := QueryEulerUserIntegCount(&eic, "UserId")
+			if eicErr == nil {
+				if eic.IntegralValue >= eid.IntegralValue {
+					eic.IntegralValue -= eid.IntegralValue
+				} else {
+					eic.IntegralValue = 0
+				}
+				ueicErr := UpdateEulerUserIntegCount(&eic, "IntegralValue", "UserId")
+				if ueicErr != nil {
+					logs.Error("UpdateEulerUserIntegCount, ueicErr: ", ueicErr)
+					o.Rollback()
+					return 0, ueicErr
+				}
+			}
+			if num, err := o.Delete(&eid, "OrId", "UserId"); err == nil {
+				logs.Info("delete hdc_euler_user_integ_detail success, num: ", num, ",orId: ", orId)
+			} else {
+				logs.Error("delete hdc_euler_user_integ_detail failed,", ",orId: ", orId, ", err: ", err)
+				o.Rollback()
+				return 0, err
+			}
+		}
+		o.Commit()
+	}
+	return userId, nil
+}
+
 func QueryEulerIssueUser(eiu *EulerIssueUser, field ...string) error {
 	o := orm.NewOrm()
 	err := o.Read(eiu, field...)
