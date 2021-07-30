@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 )
 
 //HTTPPost post request
@@ -125,4 +126,42 @@ func HTTPPut(url string, requestBody string) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 	return iss, nil
+}
+
+//HTTPGet get request
+func HTTPGet(url string) ([]map[string]interface{}, error) {
+	resp, err := http.Get(url)
+	if err != nil {
+		logs.Error("get error, url:", url, "error: ", err)
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil || body == nil {
+		logs.Error("url:", url, ",err: ", err)
+		return nil, err
+	}
+	logs.Info("body: \n", string(body), "url: ", url)
+	var col []map[string]interface{}
+	err = json.Unmarshal(body, &col)
+	if err != nil {
+		logs.Error("HTTPGet,err: ", err, "url: ", url)
+	}
+	return col, nil
+}
+
+//TimeStrToInt parse time string to unix nano
+func TimeStrToInt(ts, layout string) int64 {
+	if ts == "" {
+		return 0
+	}
+	if layout == "" {
+		layout = "2006-01-02 15:04:05"
+	}
+	t, err := time.ParseInLocation(layout, ts, time.Local)
+	if err != nil {
+		logs.Error(err)
+		return 0
+	}
+	return t.Unix()
 }

@@ -50,6 +50,9 @@ func CalculateOpenEulerPoint(flag int) {
 	fileName := ""
 	totalName := ""
 	dir := beego.AppConfig.String("path_file")
+	eulerToken := beego.AppConfig.String("repo::git_token")
+	taskStartTime := beego.AppConfig.String("task_start_time")
+	owner := beego.AppConfig.String("repo::owner")
 	// File storage directory
 	CreateDir(dir)
 	totalFileSlice := make([]string, 0)
@@ -85,8 +88,10 @@ func CalculateOpenEulerPoint(flag int) {
 			weekExcelValue := make([]ExcelValue, 0)
 			for i, eu := range eulerUser {
 				logs.Info(fmt.Sprintf("Calculate the integral value of the first: %d user: %s", i, eu.GitUserId))
-				weekExcelValue = CalculateEulerPoint(eu.GitUserId, eu.EmailAddr, lastWeekFirst, curWeekFirst, eu.UserId, weekExcelValue, i)
-				totalExcelValue = CalculateEulerPoint(eu.GitUserId, eu.EmailAddr, "", "", eu.UserId, totalExcelValue, i)
+				weekExcelValue = CalculateEulerPoint(eulerToken, taskStartTime, owner, eu.GitUserId, eu.EmailAddr,
+					lastWeekFirst, curWeekFirst, eu.UserId, weekExcelValue, i)
+				totalExcelValue = CalculateEulerPoint(eulerToken, taskStartTime, owner, eu.GitUserId, eu.EmailAddr,
+					"", "", eu.UserId, totalExcelValue, i)
 			}
 			ExcelData(fileExcelPath, weekExcelValue)
 			ExcelData(totalExcelPath, totalExcelValue)
@@ -124,8 +129,10 @@ func CalculateOpenEulerPoint(flag int) {
 			monthExcelValue := make([]ExcelValue, 0)
 			for i, eu := range eulerUser {
 				logs.Info(fmt.Sprintf("Calculate the integral value of the first: %d user: %s", i, eu.GitUserId))
-				monthExcelValue = CalculateEulerPoint(eu.GitUserId, eu.EmailAddr, startMonth, endMonth, eu.UserId, monthExcelValue, i)
-				totalExcelValue = CalculateEulerPoint(eu.GitUserId, eu.EmailAddr, "", "", eu.UserId, totalExcelValue, i)
+				monthExcelValue = CalculateEulerPoint(eulerToken, taskStartTime, owner, eu.GitUserId,
+					eu.EmailAddr, startMonth, endMonth, eu.UserId, monthExcelValue, i)
+				totalExcelValue = CalculateEulerPoint(eulerToken, taskStartTime, owner, eu.GitUserId,
+					eu.EmailAddr, "", "", eu.UserId, totalExcelValue, i)
 			}
 			ExcelData(fileExcelPath, monthExcelValue)
 			ExcelData(totalExcelPath, totalExcelValue)
@@ -243,7 +250,8 @@ func CalculateOpenGaussPoint(flag int) {
 }
 
 // Calculate points data on a weekly basis
-func CalculateEulerPoint(gitLogin, gitEmail, startTime, endTime string,
+func CalculateEulerPoint(eulerToken, taskStartTime, owner,
+	gitLogin, gitEmail, startTime, endTime string,
 	userId int64, evch []ExcelValue, index int) []ExcelValue {
 	var evu ExcelValue
 	var pv models.PointValue
@@ -259,6 +267,19 @@ func CalculateEulerPoint(gitLogin, gitEmail, startTime, endTime string,
 	if plv.Integration > 0 {
 		evu.IssueCount = plv.Integration
 	}
+	sTime := StaticIssueTime{WeekIssueStartTime: startTime, WeekIssueEndTime: endTime,
+		MonthIssueStartTime: startTime, MonthIssueEndTime: endTime, TotalIssueTime: taskStartTime}
+	staticCount := GetUserPublicUpEvents(gitLogin, eulerToken, owner, 0, 50, sTime)
+	if startTime == "" {
+		evu.CommitIssueCount = staticCount.TotalIssueCount
+		evu.CommentIssueCount = staticCount.TotalIssueCommentCount
+		evu.CommitPrCount = staticCount.TotalPullRequestCount
+	} else {
+		evu.CommitIssueCount = staticCount.monthIssueCount
+		evu.CommentIssueCount = staticCount.monthIssueCommentCount
+		evu.CommitPrCount = staticCount.monthPullRequestCount
+	}
+	//logs.Info("====================>evu: ", evu)
 	evch = append(evch, evu)
 	return evch
 }

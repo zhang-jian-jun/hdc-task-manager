@@ -98,11 +98,37 @@ const (
 	GaussLabelCmd  = "/hdc-p-challenge"
 )
 
+const (
+	IssueComment = "IssueCommentEvent"
+	PullRequest  = "PullRequestEvent"
+	IssueRequest = "IssueEvent"
+)
+
 var (
 	RegexpEmergencyLevel = regexp.MustCompile(`紧急程度[:：](?s:(.*?))难易程度[:：]`)
 	RegexpDegreeDiff     = regexp.MustCompile(`难易程度[:：](?s:(.*?))$`)
 	RegexpDigit          = regexp.MustCompile(`([0-9]+)`)
 )
+
+type StaticIssueInfo struct {
+	WeekIssueCount         int64
+	WeekIssueCommentCount  int64
+	WeekPullRequestCount   int64
+	monthIssueCount        int64
+	monthIssueCommentCount int64
+	monthPullRequestCount  int64
+	TotalIssueCount        int64
+	TotalIssueCommentCount int64
+	TotalPullRequestCount  int64
+}
+
+type StaticIssueTime struct {
+	WeekIssueStartTime  string
+	WeekIssueEndTime    string
+	MonthIssueStartTime string
+	MonthIssueEndTime   string
+	TotalIssueTime      string
+}
 
 //AddCommentToIssue Add a comment to the issue
 func AddCommentToIssue(msg, issueNum, owner, repo, access string) {
@@ -221,6 +247,151 @@ func IssueStateRev(issueState string) (statusName string) {
 			statusName = "suspended"
 		} else {
 			statusName = issueState
+		}
+	}
+	return
+}
+
+//Get public updates from users
+func GetUserPublicUpEvents(userName, accessToken, ownerList string, prevId, limit int64, sTime StaticIssueTime) StaticIssueInfo {
+	localPrevId := prevId
+	localLimit := limit
+	sii := StaticIssueInfo{}
+	for {
+		url := ""
+		if prevId > 0 {
+			url = fmt.Sprintf("https://gitee.com/api/v5/users/%v/events/public?access_token=%v&prev_id=%v&limit=%v",
+				userName, accessToken, localPrevId, localLimit)
+		} else {
+			url = fmt.Sprintf("https://gitee.com/api/v5/users/%v/events/public?access_token=%v&limit=%v",
+				userName, accessToken, localLimit)
+		}
+		publicData, err := util.HTTPGet(url)
+		if err == nil && publicData != nil {
+			for _, value := range publicData {
+				if _, ok := value["id"]; !ok {
+					logs.Error("publicData, err: ", ok, "url: ", url)
+					continue
+				}
+				staticIssueComment(value, ownerList, userName, sTime, &sii)
+			}
+		} else {
+			break
+		}
+	}
+	return sii
+}
+
+func staticIssueComment(value map[string]interface{},
+	ownerList, userName string, sTime StaticIssueTime, sii *StaticIssueInfo) {
+	createdAt := value["created_at"].(string)
+	ct := int64(0)
+	wst := int64(0)
+	wet := int64(0)
+	mst := int64(0)
+	met := int64(0)
+	tst := int64(0)
+	if len(createdAt) > 0 {
+		if len(createdAt) > 19 {
+			ct = util.TimeStrToInt(createdAt[:19], "2006-01-02T15:04:05")
+		} else {
+			ct = util.TimeStrToInt(createdAt, "2006-01-02T15:04:05")
+		}
+	}
+	if len(sTime.WeekIssueStartTime) > 0 {
+		if len(sTime.WeekIssueStartTime) <= 10 {
+			sTime.WeekIssueStartTime = sTime.WeekIssueStartTime + " 00:00:00"
+		}
+		wst = util.TimeStrToInt(sTime.WeekIssueStartTime, "2006-01-02 15:04:05")
+
+	}
+	if len(sTime.WeekIssueEndTime) > 0 {
+		if len(sTime.WeekIssueEndTime) <= 10 {
+			sTime.WeekIssueEndTime = sTime.WeekIssueEndTime + " 00:00:00"
+		}
+		wet = util.TimeStrToInt(sTime.WeekIssueEndTime, "2006-01-02 15:04:05")
+	}
+	if len(sTime.MonthIssueStartTime) > 0 {
+		if len(sTime.MonthIssueStartTime) <= 10 {
+			sTime.MonthIssueStartTime = sTime.MonthIssueStartTime + " 00:00:00"
+		}
+		mst = util.TimeStrToInt(sTime.MonthIssueStartTime, "2006-01-02 15:04:05")
+
+	}
+	if len(sTime.MonthIssueEndTime) > 0 {
+		if len(sTime.MonthIssueEndTime) <= 10 {
+			sTime.MonthIssueEndTime = sTime.MonthIssueEndTime + " 00:00:00"
+		}
+		met = util.TimeStrToInt(sTime.MonthIssueEndTime, "2006-01-02 15:04:05")
+	}
+	if len(sTime.TotalIssueTime) > 0 {
+		if len(sTime.TotalIssueTime) <= 10 {
+			sTime.TotalIssueTime = sTime.TotalIssueTime + " 00:00:00"
+		}
+		tst = util.TimeStrToInt(sTime.TotalIssueTime, "2006-01-02 15:04:05")
+
+	}
+	repoMap := value["repo"].(map[string]interface{})
+	namespaceMap := repoMap["namespace"].(map[string]interface{})
+	path := namespaceMap["path"].(string)
+	pathFlag := false
+	ownSlice := strings.Split(ownerList, ",")
+	for _, os := range ownSlice {
+		if path == os {
+			pathFlag = true
+		}
+	}
+	if !pathFlag {
+		logs.Error("path: ", path, ",Not in the current organization and not participating in statistics")
+		return
+	}
+	switch value["type"].(string) {
+	case IssueComment:
+		payloadMap := value["payload"].(map[string]interface{})
+		commentMap := payloadMap["comment"].(map[string]interface{})
+		userMap := commentMap["user"].(map[string]interface{})
+		login := userMap["login"].(string)
+		if userName == login {
+			if wst <= ct && ct <= wet {
+				sii.WeekIssueCount += 1
+			}
+			if mst <= ct && ct <= met {
+				sii.monthIssueCount += 1
+			}
+			if tst <= ct {
+				sii.TotalIssueCount += 1
+			}
+		}
+	case PullRequest:
+		payloadMap := value["payload"].(map[string]interface{})
+		headMap := payloadMap["head"].(map[string]interface{})
+		userMap := headMap["user"].(map[string]interface{})
+		login := userMap["login"].(string)
+		if userName == login {
+			if wst <= ct && ct <= wet {
+				sii.WeekIssueCount += 1
+			}
+			if mst <= ct && ct <= met {
+				sii.monthIssueCount += 1
+			}
+			if tst <= ct {
+				sii.TotalIssueCount += 1
+			}
+		}
+	case IssueRequest:
+		payloadMap := value["payload"].(map[string]interface{})
+		userMap := payloadMap["user"].(map[string]interface{})
+		login := userMap["login"].(string)
+		if userName == login {
+			if wst <= ct && ct <= wet {
+				sii.WeekIssueCount += 1
+			}
+			if mst <= ct && ct <= met {
+				sii.monthIssueCount += 1
+			}
+			if tst <= ct {
+				sii.TotalIssueCount += 1
+			}
 		}
 	}
 	return

@@ -24,12 +24,15 @@ import (
 const sheetName = "user_points_list"
 
 type ExcelValue struct {
-	CurIndex   int
-	GitLogin   string
-	GitEmail   string
-	Points     int64
-	IssueCount int64
-	Decription string
+	CurIndex          int
+	GitLogin          string
+	GitEmail          string
+	Points            int64
+	IssueCount        int64
+	CommitIssueCount  int64
+	CommentIssueCount int64
+	CommitPrCount     int64
+	Decription        string
 }
 
 type Mail interface {
@@ -80,7 +83,10 @@ func createExcel(excelPath string) string {
 	sheetTileMap["B1"] = "gitee邮箱"
 	sheetTileMap["C1"] = "积分值"
 	sheetTileMap["D1"] = "解决issue/pr数量"
-	sheetTileMap["E1"] = "备注"
+	sheetTileMap["E1"] = "提交issue数量"
+	sheetTileMap["F1"] = "评论issue数量"
+	sheetTileMap["G1"] = "提交pr数量"
+	sheetTileMap["H1"] = "备注"
 	for k, v := range sheetTileMap {
 		xlsx.SetCellValue(sheetName, k, v)
 	}
@@ -131,6 +137,9 @@ func addExcelData(ev ExcelValue) []interface{} {
 	cveData = append(cveData, ev.GitEmail)
 	cveData = append(cveData, ev.Points)
 	cveData = append(cveData, ev.IssueCount)
+	cveData = append(cveData, ev.CommitIssueCount)
+	cveData = append(cveData, ev.CommentIssueCount)
+	cveData = append(cveData, ev.CommitPrCount)
 	cveData = append(cveData, ev.Decription)
 	return cveData
 }
