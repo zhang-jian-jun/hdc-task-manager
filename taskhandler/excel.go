@@ -82,10 +82,10 @@ func createExcel(excelPath string) string {
 	sheetTileMap["A1"] = "gitee用户账号"
 	sheetTileMap["B1"] = "gitee邮箱"
 	sheetTileMap["C1"] = "积分值"
-	sheetTileMap["D1"] = "解决issue/pr数量"
-	sheetTileMap["E1"] = "提交issue数量"
-	sheetTileMap["F1"] = "评论issue数量"
-	sheetTileMap["G1"] = "提交pr数量"
+	sheetTileMap["D1"] = "hdc任务完成issue数量"
+	sheetTileMap["E1"] = "个人提交issue数量"
+	sheetTileMap["F1"] = "个人评论issue数量"
+	sheetTileMap["G1"] = "个人提交pr数量"
 	sheetTileMap["H1"] = "备注"
 	for k, v := range sheetTileMap {
 		xlsx.SetCellValue(sheetName, k, v)
