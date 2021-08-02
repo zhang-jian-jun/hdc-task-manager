@@ -259,7 +259,7 @@ func GetUserPublicUpEvents(userName, accessToken, ownerList string, prevId, limi
 	sii := StaticIssueInfo{}
 	for {
 		url := ""
-		if prevId > 0 {
+		if localPrevId > 0 {
 			url = fmt.Sprintf("https://gitee.com/api/v5/users/%v/events/public?access_token=%v&prev_id=%v&limit=%v",
 				userName, accessToken, localPrevId, localLimit)
 		} else {
@@ -267,11 +267,17 @@ func GetUserPublicUpEvents(userName, accessToken, ownerList string, prevId, limi
 				userName, accessToken, localLimit)
 		}
 		publicData, err := util.HTTPGet(url)
-		if err == nil && publicData != nil {
+		if err == nil && publicData != nil && len(publicData) > 0 {
 			for _, value := range publicData {
 				if _, ok := value["id"]; !ok {
 					logs.Error("publicData, err: ", ok, "url: ", url)
 					continue
+				}
+				if localPrevId == 0 {
+					localPrevId = int64(value["id"].(float64))
+				}
+				if localPrevId > int64(value["id"].(float64)) {
+					localPrevId = int64(value["id"].(float64))
 				}
 				staticIssueComment(value, ownerList, userName, sTime, &sii)
 			}
@@ -284,6 +290,10 @@ func GetUserPublicUpEvents(userName, accessToken, ownerList string, prevId, limi
 
 func staticIssueComment(value map[string]interface{},
 	ownerList, userName string, sTime StaticIssueTime, sii *StaticIssueInfo) {
+	if value == nil || value["created_at"] == nil {
+		logs.Error("created_at is empty to exit, created_at: ", value["created_at"])
+		return
+	}
 	createdAt := value["created_at"].(string)
 	ct := int64(0)
 	wst := int64(0)
@@ -331,8 +341,20 @@ func staticIssueComment(value map[string]interface{},
 		tst = util.TimeStrToInt(sTime.TotalIssueTime, "2006-01-02 15:04:05")
 
 	}
+	if value["repo"] == nil || len(value["repo"].(map[string]interface{})) == 0 {
+		logs.Error("repo is empty to exit, repo: ", value["repo"])
+		return
+	}
 	repoMap := value["repo"].(map[string]interface{})
+	if repoMap["namespace"] == nil || len(repoMap["namespace"].(map[string]interface{})) == 0 {
+		logs.Error("namespace is empty to exit, namespace: ", repoMap["namespace"])
+		return
+	}
 	namespaceMap := repoMap["namespace"].(map[string]interface{})
+	if namespaceMap["path"] == nil || len(namespaceMap["path"].(string)) == 0 {
+		logs.Error("path is empty to exit, path: ", namespaceMap["path"])
+		return
+	}
 	path := namespaceMap["path"].(string)
 	pathFlag := false
 	ownSlice := strings.Split(ownerList, ",")
@@ -345,42 +367,90 @@ func staticIssueComment(value map[string]interface{},
 		logs.Error("path: ", path, ",Not in the current organization and not participating in statistics")
 		return
 	}
+	if value["type"] == nil || len(value["type"].(string)) == 0 {
+		logs.Error("type is empty to exit, type: ", value["type"])
+		return
+	}
 	switch value["type"].(string) {
 	case IssueComment:
+		if value["payload"] == nil || len(value["payload"].(map[string]interface{})) == 0 {
+			logs.Error("payload is empty to exit, payload: ", value["payload"])
+			return
+		}
 		payloadMap := value["payload"].(map[string]interface{})
+		if payloadMap["comment"] == nil || len(payloadMap["comment"].(map[string]interface{})) == 0 {
+			logs.Error("comment is empty to exit, comment: ", payloadMap["comment"])
+			return
+		}
 		commentMap := payloadMap["comment"].(map[string]interface{})
+		if commentMap["user"] == nil || len(commentMap["user"].(map[string]interface{})) == 0 {
+			logs.Error("user is empty to exit, user: ", commentMap["user"])
+			return
+		}
 		userMap := commentMap["user"].(map[string]interface{})
+		if userMap["login"] == nil || len(userMap["login"].(string)) == 0 {
+			logs.Error("login is empty to exit, login: ", userMap["login"])
+			return
+		}
 		login := userMap["login"].(string)
 		if userName == login {
 			if wst <= ct && ct <= wet {
-				sii.WeekIssueCount += 1
+				sii.WeekIssueCommentCount += 1
 			}
 			if mst <= ct && ct <= met {
-				sii.monthIssueCount += 1
+				sii.monthIssueCommentCount += 1
 			}
 			if tst <= ct {
-				sii.TotalIssueCount += 1
+				sii.TotalIssueCommentCount += 1
 			}
 		}
 	case PullRequest:
+		if value["payload"] == nil || len(value["payload"].(map[string]interface{})) == 0 {
+			logs.Error("payload is empty to exit, payload: ", value["payload"])
+			return
+		}
 		payloadMap := value["payload"].(map[string]interface{})
+		if payloadMap["head"] == nil || len(payloadMap["head"].(map[string]interface{})) == 0 {
+			logs.Error("head is empty to exit, head: ", payloadMap["head"])
+			return
+		}
 		headMap := payloadMap["head"].(map[string]interface{})
+		if headMap["user"] == nil || len(headMap["user"].(map[string]interface{})) == 0 {
+			logs.Error("user is empty to exit, user: ", headMap["user"])
+			return
+		}
 		userMap := headMap["user"].(map[string]interface{})
+		if userMap["login"] == nil || len(userMap["login"].(string)) == 0 {
+			logs.Error("login is empty to exit, login: ", userMap["login"])
+			return
+		}
 		login := userMap["login"].(string)
 		if userName == login {
 			if wst <= ct && ct <= wet {
-				sii.WeekIssueCount += 1
+				sii.WeekPullRequestCount += 1
 			}
 			if mst <= ct && ct <= met {
-				sii.monthIssueCount += 1
+				sii.monthPullRequestCount += 1
 			}
 			if tst <= ct {
-				sii.TotalIssueCount += 1
+				sii.TotalPullRequestCount += 1
 			}
 		}
 	case IssueRequest:
+		if value["payload"] == nil || len(value["payload"].(map[string]interface{})) == 0 {
+			logs.Error("payload is empty to exit, payload: ", value["payload"])
+			return
+		}
 		payloadMap := value["payload"].(map[string]interface{})
+		if payloadMap["user"] == nil || len(payloadMap["user"].(map[string]interface{})) == 0 {
+			logs.Error("user is empty to exit, user: ", payloadMap["user"])
+			return
+		}
 		userMap := payloadMap["user"].(map[string]interface{})
+		if userMap["login"] == nil || len(userMap["login"].(string)) == 0 {
+			logs.Error("login is empty to exit, login: ", userMap["login"])
+			return
+		}
 		login := userMap["login"].(string)
 		if userName == login {
 			if wst <= ct && ct <= wet {

@@ -141,7 +141,7 @@ func HTTPGet(url string) ([]map[string]interface{}, error) {
 		logs.Error("url:", url, ",err: ", err)
 		return nil, err
 	}
-	logs.Info("body: \n", string(body), "url: ", url)
+	logs.Info("body: \n", string(body), "\n", "url: ", url)
 	var col []map[string]interface{}
 	err = json.Unmarshal(body, &col)
 	if err != nil {

@@ -8,6 +8,7 @@ import (
 	"hdc-task-manager/common"
 	"hdc-task-manager/models"
 	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -53,6 +54,8 @@ func CalculateOpenEulerPoint(flag int) {
 	eulerToken := beego.AppConfig.String("repo::git_token")
 	taskStartTime := beego.AppConfig.String("task_start_time")
 	owner := beego.AppConfig.String("repo::owner")
+	noProcUser := beego.AppConfig.String("repo::user_login")
+	noProcUserSlice := strings.Split(noProcUser, ",")
 	// File storage directory
 	CreateDir(dir)
 	totalFileSlice := make([]string, 0)
@@ -87,6 +90,16 @@ func CalculateOpenEulerPoint(flag int) {
 			}
 			weekExcelValue := make([]ExcelValue, 0)
 			for i, eu := range eulerUser {
+				userFlag := false
+				for _, userValue := range noProcUserSlice {
+					if userValue == eu.GitUserId {
+						userFlag = true
+						break
+					}
+				}
+				if userFlag {
+					continue
+				}
 				logs.Info(fmt.Sprintf("Calculate the integral value of the first: %d user: %s", i, eu.GitUserId))
 				weekExcelValue = CalculateEulerPoint(eulerToken, taskStartTime, owner, eu.GitUserId, eu.EmailAddr,
 					lastWeekFirst, curWeekFirst, eu.UserId, weekExcelValue, i)
@@ -128,6 +141,16 @@ func CalculateOpenEulerPoint(flag int) {
 			}
 			monthExcelValue := make([]ExcelValue, 0)
 			for i, eu := range eulerUser {
+				userFlag := false
+				for _, userValue := range noProcUserSlice {
+					if userValue == eu.GitUserId {
+						userFlag = true
+						break
+					}
+				}
+				if userFlag {
+					continue
+				}
 				logs.Info(fmt.Sprintf("Calculate the integral value of the first: %d user: %s", i, eu.GitUserId))
 				monthExcelValue = CalculateEulerPoint(eulerToken, taskStartTime, owner, eu.GitUserId,
 					eu.EmailAddr, startMonth, endMonth, eu.UserId, monthExcelValue, i)
@@ -269,7 +292,7 @@ func CalculateEulerPoint(eulerToken, taskStartTime, owner,
 	}
 	sTime := StaticIssueTime{WeekIssueStartTime: startTime, WeekIssueEndTime: endTime,
 		MonthIssueStartTime: startTime, MonthIssueEndTime: endTime, TotalIssueTime: taskStartTime}
-	staticCount := GetUserPublicUpEvents(gitLogin, eulerToken, owner, 0, 50, sTime)
+	staticCount := GetUserPublicUpEvents(gitLogin, eulerToken, owner, 0, 20, sTime)
 	if startTime == "" {
 		evu.CommitIssueCount = staticCount.TotalIssueCount
 		evu.CommentIssueCount = staticCount.TotalIssueCommentCount
@@ -279,7 +302,7 @@ func CalculateEulerPoint(eulerToken, taskStartTime, owner,
 		evu.CommentIssueCount = staticCount.monthIssueCommentCount
 		evu.CommitPrCount = staticCount.monthPullRequestCount
 	}
-	//logs.Info("====================>evu: ", evu)
+	logs.Info("====================>evu: ", evu)
 	evch = append(evch, evu)
 	return evch
 }
