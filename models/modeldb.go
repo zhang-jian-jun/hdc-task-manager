@@ -45,6 +45,7 @@ type EulerOriginIssue struct {
 	FinishedTime   string `orm:"size(32);column(finished_time);null"`
 	DeleteTime     string `orm:"size(32);column(delete_time);null"`
 	GrabTime       string `orm:"size(32);column(grab_time)" description:"记录当前issue抓取的时间"`
+	RecordCount    int    `orm:"default(1);column(record_count)" description:"记录题目释放次数"`
 }
 
 // Individual claiming the issue task pool

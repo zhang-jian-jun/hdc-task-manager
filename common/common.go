@@ -41,7 +41,7 @@ func TimeStrToInt(ts, layout string) int64 {
 		return 0
 	}
 	if layout == "" {
-		layout = "2006-01-02 15:04:05"
+		layout = DATE_FORMAT
 	}
 	t, err := time.ParseInLocation(layout, ts, time.Local)
 	if err != nil {
@@ -72,4 +72,8 @@ func GetAfterTime(days int) string {
 	resTime := getTime.Format(DATE_FORMAT) // The format of the obtained time
 	logs.Info("Get the number of days：", days, ",Time ago：", resTime)
 	return resTime
+}
+
+func GetCurDate() string {
+	return time.Now().Format("2006-01-02")
 }

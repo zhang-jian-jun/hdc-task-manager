@@ -52,5 +52,17 @@ func InitTask() bool {
 		reluncomplete := beego.AppConfig.String("task::reluncomplete")
 		EulerRelUncompleteTask(reluncomplete)
 	}
+	// Export issue pr and number of comments
+	exportissueprflag, errxs := beego.AppConfig.Int("task::exportissueprflag")
+	if exportissueprflag == 1 && errxs == nil {
+		exportissuepr := beego.AppConfig.String("task::exportissuepr")
+		EulerIssueStatisticsTask(exportissuepr)
+	}
+	// Releasing the limited number of canceled tasks per month
+	monthrelunassignflag, errxs := beego.AppConfig.Int("task::monthrelunassignflag")
+	if monthrelunassignflag == 1 && errxs == nil {
+		monthrelunassign := beego.AppConfig.String("task::monthrelunassign")
+		MonthRelUnassignTask(monthrelunassign)
+	}
 	return true
 }

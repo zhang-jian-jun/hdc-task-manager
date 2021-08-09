@@ -365,3 +365,9 @@ func DeleteGaussOriginIssueAll(goi *GaussOriginIssue, dataType int8) (int64, err
 	}
 	return userId, nil
 }
+
+func AddEulerOrgIssueCount(orId int64) {
+	o := orm.NewOrm()
+	err := o.Raw("update hdc_euler_origin_issue set record_count = record_count + 1 where or_id = ?", orId).QueryRow()
+	logs.Info("AddEulerOrgIssueCount", err)
+}

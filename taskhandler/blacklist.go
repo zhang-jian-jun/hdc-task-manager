@@ -23,6 +23,8 @@ func ForciblyCancelClaim(owner, eulerToken, gitUserId string, eoi models.EulerOr
 			// give up task
 			delErr := models.DeleteEulerIssueUser(&eu, "UserId", "OrId")
 			if delErr == nil {
+				// add issue count
+				models.AddEulerOrgIssueCount(eoi.OrId)
 				// Edit label
 				hdcTask := beego.AppConfig.String("hdc_task")
 				eoi.IssueLabel = hdcTask
@@ -172,4 +174,34 @@ func AddUserAssignTime(label string) bool {
 		}
 	}
 	return false
+}
+
+func MonthRelUnassign() error {
+	// cur month
+	_, endMonth := common.GetLastMonthDate()
+	unassignAll := models.QueryEulerUnassignAll()
+	if len(unassignAll) > 0 {
+		for _, un := range unassignAll {
+			eiu := models.QueryEulerIssueUserRecord(2, endMonth, un.UserId)
+			eiuCount := int8(len(eiu))
+			if eiuCount > 0 {
+				if un.CountValue > eiuCount {
+					un.CountValue = un.CountValue - eiuCount
+					un.UnassignTime = ""
+					upErr := models.UpdateEulerUserUnassigned(&un, "CountValue", "UnassignTime")
+					if upErr != nil {
+						logs.Error(upErr)
+					}
+				} else {
+					if eiuCount == un.CountValue && un.CreateTime < endMonth {
+						delErr := models.DelEulerUserUnassigned(&un, "Id", "UserId")
+						if delErr != nil {
+							logs.Error(delErr)
+						}	
+					}
+				}
+			}
+		}
+	}
+	return nil
 }

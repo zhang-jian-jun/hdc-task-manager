@@ -82,3 +82,17 @@ func RelUncompleteTask() error {
 	taskhandler.RemoveUncompleteList()
 	return nil
 }
+
+func EulerIssueStatisticsTask(exportissuepr string) {
+	logs.Info("Issue statistics service started...")
+	statisticsTask := toolbox.NewTask("EulerIssueStatistics", exportissuepr, taskhandler.EulerIssueStatistics)
+	toolbox.AddTask("EulerIssueStatistics", statisticsTask)
+	logs.Info("Issue statistics service end...")
+}
+
+func MonthRelUnassignTask(monthrelunassign string) {
+	logs.Info("Release the limit on the number of monthly cancellations start...")
+	monthrelunassignTask := toolbox.NewTask("MonthRelUnassign", monthrelunassign, taskhandler.MonthRelUnassign)
+	toolbox.AddTask("MonthRelUnassign", monthrelunassignTask)
+	logs.Info("Release the limit on the number of monthly cancellations end...")
+}

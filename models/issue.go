@@ -141,6 +141,12 @@ func UpdateEulerUserUnassigned(euu *EulerUnassignUser, fields ...string) error {
 	return err
 }
 
+func DelEulerUserUnassigned(euu *EulerUnassignUser, fields ...string) error {
+	o := orm.NewOrm()
+	_, err := o.Delete(euu, fields...)
+	return err
+}
+
 // insert data
 func InsertGaussOriginIssue(eoi *GaussOriginIssue) (int64, error) {
 	o := orm.NewOrm()

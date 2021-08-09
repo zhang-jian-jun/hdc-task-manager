@@ -56,3 +56,22 @@ func QueryEulerUncompleteUserHistory() (eiu []EulerIssueUser) {
 	}
 	return
 }
+
+func QueryEulerIssueUserRecord(status int8, curTime string, userId int64) (eiu []EulerIssueUserRecord) {
+	o := orm.NewOrm()
+	num, _ := o.Raw("select * from hdc_euler_issue_user_record where " +
+		"status = ? and create_time < ? and user_id = ?", status, curTime, userId).QueryRows(&eiu)
+	if num > 0 {
+		logs.Info("QueryEulerIssueUserRecord, num: ", num)
+	}
+	return
+}
+
+func QueryEulerUnassignAll() (euu []EulerUnassignUser) {
+	o := orm.NewOrm()
+	num, _ := o.Raw("select * from hdc_euler_unassign_user").QueryRows(&euu)
+	if num > 0 {
+		logs.Info("QueryEulerUnassignAll, num: ", num)
+	}
+	return
+}
