@@ -180,12 +180,13 @@ func MonthRelUnassign() error {
 	// cur month
 	_, endMonth := common.GetLastMonthDate()
 	unassignAll := models.QueryEulerUnassignAll()
+	issueCount := int8(beego.AppConfig.DefaultInt("claimed::issue_count", 3))
 	if len(unassignAll) > 0 {
 		for _, un := range unassignAll {
 			eiu := models.QueryEulerIssueUserRecord(2, endMonth, un.UserId)
 			eiuCount := int8(len(eiu))
 			if eiuCount > 0 {
-				if un.CountValue > eiuCount {
+				if un.CountValue > eiuCount && un.UpdateTime >= endMonth {
 					un.CountValue = un.CountValue - eiuCount
 					un.UnassignTime = ""
 					upErr := models.UpdateEulerUserUnassigned(&un, "CountValue", "UnassignTime")
@@ -193,11 +194,11 @@ func MonthRelUnassign() error {
 						logs.Error(upErr)
 					}
 				} else {
-					if eiuCount == un.CountValue && un.CreateTime < endMonth {
+					if un.CountValue < issueCount && un.UpdateTime < endMonth {
 						delErr := models.DelEulerUserUnassigned(&un, "Id", "UserId")
 						if delErr != nil {
 							logs.Error(delErr)
-						}	
+						}
 					}
 				}
 			}

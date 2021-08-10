@@ -136,6 +136,11 @@ func HTTPGet(url string) ([]map[string]interface{}, error) {
 		return nil, err
 	}
 	defer resp.Body.Close()
+	status, _ := strconv.Atoi(resp.Status)
+	if status > 300 {
+		logs.Error("resp.Status: ", resp.Status, resp.Header)
+		return nil, err
+	}
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil || body == nil {
 		logs.Error("url:", url, ",err: ", err)

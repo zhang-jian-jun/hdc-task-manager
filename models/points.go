@@ -9,10 +9,22 @@ type PointValue struct {
 	Integration int64
 }
 
+func QueryOpenEulerIssueAll() (eoi []EulerOriginIssue) {
+	o := orm.NewOrm()
+	var num int64
+	num, err := o.Raw("select * from hdc_euler_origin_issue").QueryRows(&eoi)
+	if num > 0 {
+		logs.Info("QueryOpenEulerIssueAll, num: ", num)
+	} else {
+		logs.Error("QueryOpenEulerIssueAll, err: ", err)
+	}
+	return
+}
+
 func QueryOpenEulerUserAll() (eu []EulerUser) {
 	o := orm.NewOrm()
 	var num int64
-	num, err := o.Raw("select * FROM hdc_euler_user").QueryRows(&eu)
+	num, err := o.Raw("select * from hdc_euler_user").QueryRows(&eu)
 	if num > 0 {
 		logs.Info("QueryOpenEulerUserAll, num: ", num)
 	} else {

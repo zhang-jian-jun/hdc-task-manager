@@ -34,7 +34,7 @@ type EulerOriginIssue struct {
 	RepoPath       string `orm:"column(issue_repo);size(512)" description:"仓库空间地址"`
 	RepoUrl        string `orm:"column(repo_url);type(text)" description:"仓库码云地址链接"`
 	Owner          string `orm:"column(owner_repo);size(64)" description:"仓库所在组织"`
-	Status         int8   `orm:"default(0);column(status)" description:"0:正常;1:已删除"`
+	Status         int8   `orm:"default(1);column(status)" description:"1:正常;2:已删除"`
 	IssueStateName string `orm:"size(50);column(issue_state_name)" description:"issue 中文状态"`
 	EmergencyLevel string `orm:"size(32);column(emerg_level)" description:"紧急程度 1：高;2:中;3:低"`
 	EmergencyValue int    `orm:"default(3);column(emerg_value)" description:"紧急程度 1：高;2:中;3:低"`

@@ -46,59 +46,59 @@ func TimeStampToString(timeStp int64) string {
 }
 
 // Time converted into a list of days of the week
-func ChangeToWeek(startime, endtim string) []map[string]string {
+func ChangeToWeek(startime, endtim string) [][]string {
 	staweek_int, endweek_int := GetWeekDay(startime, endtim)
 	start_stamp := StringToTimeStamp(startime)
 	end_stamp := StringToTimeStamp(endtim)
 	fmt.Println("start_stamp==", start_stamp, "end_stamp==", end_stamp)
-	var week_list = make([]map[string]string, 0)
+	var week_list = make([][]string, 0)
 	if (end_stamp-start_stamp)/604800 <= 1 && endweek_int-staweek_int >= 0 {
 		if end_stamp-start_stamp < 604800 && endweek_int-staweek_int > 0 {
-			one_map := map[string]string{}
+			one_arry := []string{}
 			mon_one := TimeStampToString(start_stamp - (staweek_int-1)*86400)
 			sun_one := TimeStampToString(start_stamp + (7-staweek_int)*86400)
-			one_map["mon"] = mon_one
-			one_map["sun"] = sun_one
-			week_list = append(week_list, one_map)
+			one_arry = append(one_arry, mon_one + " 00:00:00")
+			one_arry = append(one_arry, sun_one + " 23:59:59")
+			week_list = append(week_list, one_arry)
 			return week_list
 		}
-		one_map := map[string]string{}
+		one_arry := []string{}
 		mon_one := TimeStampToString(start_stamp - (staweek_int-1)*86400)
 		sun_one := TimeStampToString(start_stamp + (7-staweek_int)*86400)
-		one_map["mon"] = mon_one
-		one_map["sun"] = sun_one
-		week_list = append(week_list, one_map)
-		tow_map := map[string]string{}
+		one_arry = append(one_arry, mon_one + " 00:00:00")
+		one_arry = append(one_arry, sun_one + " 23:59:59")
+		week_list = append(week_list, one_arry)
+		tow_arry := []string{}
 		mon_tow := TimeStampToString(end_stamp - (endweek_int-1)*86400)
 		sun_tow := TimeStampToString(end_stamp + (7-endweek_int)*86400)
-		tow_map["mon"] = mon_tow
-		tow_map["sun"] = sun_tow
-		week_list = append(week_list, tow_map)
+		tow_arry = append(tow_arry, mon_tow + " 00:00:00")
+		tow_arry = append(tow_arry, sun_tow + " 23:59:59")
+		week_list = append(week_list, tow_arry)
 		return week_list
 	}
 	week_n := (end_stamp - start_stamp) / 604800
-	one_map := map[string]string{}
+	one_arry := []string{}
 	mon_one := TimeStampToString(start_stamp - (staweek_int-1)*86400)
 	sun_one := TimeStampToString(start_stamp + (7-staweek_int)*86400)
-	one_map["mon"] = mon_one
-	one_map["sun"] = sun_one
-	week_list = append(week_list, one_map)
+	one_arry = append(one_arry, mon_one + " 00:00:00")
+	one_arry = append(one_arry, sun_one + " 23:59:59")
+	week_list = append(week_list, one_arry)
 	for i := 1; i <= int(week_n); i++ {
-		week_map := map[string]string{}
+		week_arry := []string{}
 		mon_day := TimeStampToString(start_stamp - (staweek_int-1)*86400 + int64(i)*604800)
 		sun_day := TimeStampToString(start_stamp + (7-staweek_int)*86400 + int64(i)*604800)
-		week_map["mon"] = mon_day
-		week_map["sun"] = sun_day
-		week_list = append(week_list, week_map)
+		week_arry = append(week_arry, mon_day + " 00:00:00")
+		week_arry = append(week_arry, sun_day + " 23:59:59")
+		week_list = append(week_list, week_arry)
 	}
 	if endweek_int-staweek_int >= 0 {
 		return week_list
 	}
-	tow_map := map[string]string{}
+	tow_arry := []string{}
 	mon_tow := TimeStampToString(end_stamp - (endweek_int-1)*86400)
 	sun_tow := TimeStampToString(end_stamp + (7-endweek_int)*86400)
-	tow_map["mon"] = mon_tow
-	tow_map["sun"] = sun_tow
-	week_list = append(week_list, tow_map)
+	tow_arry = append(tow_arry, mon_tow + " 00:00:00")
+	tow_arry = append(tow_arry, sun_tow + " 23:59:59")
+	week_list = append(week_list, tow_arry)
 	return week_list
 }
