@@ -12,12 +12,26 @@ import (
 	"time"
 )
 
+type StatistDate struct {
+	LastWeekFirst string
+	CurWeekFirst  string
+	StartMonth    string
+	EndMonth      string
+}
+
 // Start the integration task
 func GetWeekPointsTask(exportWPoint string) {
 	logs.Info("Execute the task of exporting weekly points and start...")
 	pointTask := toolbox.NewTask("DealWeekPointStart", exportWPoint, DealWeekPointStart)
 	toolbox.AddTask("DealWeekPointStart", pointTask)
 	logs.Info("The task of exporting weekly points is over...")
+}
+
+func GetSpecWeekPointsTask(specexportwpoint string) {
+	logs.Info("Execute the task of exporting sepecly weekly points and start...")
+	weeklyPointTask := toolbox.NewTask("DealSpecWeekPointStart", specexportwpoint, DealSpecWeekPointStart)
+	toolbox.AddTask("DealSpecWeekPointStart", weeklyPointTask)
+	logs.Info("The task of exporting sepecly weekly points is over...")
 }
 
 func GetMonthPointsTask(exportMPoint string) {
@@ -37,6 +51,12 @@ func DealWeekPointStart() error {
 	return nil
 }
 
+func DealSpecWeekPointStart() error {
+	// 1. Calculate openEuler points
+	CalculateEulerSpecWeekPoint(1)
+	return nil
+}
+
 // Deal with integration tasks
 func DealMonthPointStart() error {
 	// 1. Calculate openEuler points
@@ -47,7 +67,29 @@ func DealMonthPointStart() error {
 	return nil
 }
 
+func CalculateEulerSpecWeekPoint(flag int) {
+	// weekly date
+	weekList := ChangeToWeek("2021-07-01", "2021-08-01")
+	if len(weekList) > 0 {
+		for _, wl := range weekList {
+			statistDate := StatistDate{LastWeekFirst: wl[0], CurWeekFirst: wl[1], StartMonth: "", EndMonth: ""}
+			ExportEulerPoints(flag, statistDate)
+		}
+	}
+}
+
 func CalculateOpenEulerPoint(flag int) {
+	// weekly date
+	lastWeekFirst := common.GetLastWeekFirstDate()
+	curWeekFirst := common.GetFirstDateOfWeek()
+	// last month
+	startMonth, endMonth := common.GetLastMonthDate()
+	statistDate := StatistDate{LastWeekFirst: lastWeekFirst, CurWeekFirst: curWeekFirst,
+		StartMonth: startMonth, EndMonth: endMonth}
+	ExportEulerPoints(flag, statistDate)
+}
+
+func ExportEulerPoints(flag int, statistDate StatistDate) {
 	fileName := ""
 	totalName := ""
 	dir := beego.AppConfig.String("path_file")
@@ -61,10 +103,11 @@ func CalculateOpenEulerPoint(flag int) {
 	totalFileSlice := make([]string, 0)
 	fileSlice := make([]string, 0)
 	// weekly date
-	lastWeekFirst := common.GetLastWeekFirstDate()
-	curWeekFirst := common.GetFirstDateOfWeek()
+	lastWeekFirst := statistDate.LastWeekFirst
+	curWeekFirst := statistDate.CurWeekFirst
 	// last month
-	startMonth, endMonth := common.GetLastMonthDate()
+	startMonth := statistDate.StartMonth
+	endMonth := statistDate.EndMonth
 	// Get user information
 	eulerUser := models.QueryOpenEulerUserAll()
 	if len(eulerUser) > 0 {

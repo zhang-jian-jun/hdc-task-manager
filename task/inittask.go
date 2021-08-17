@@ -64,5 +64,11 @@ func InitTask() bool {
 		monthrelunassign := beego.AppConfig.String("task::monthrelunassign")
 		MonthRelUnassignTask(monthrelunassign)
 	}
+	// Export points for the specified week
+	specexportwpointflag, errxs := beego.AppConfig.Int("task::specexportwpointflag")
+	if specexportwpointflag == 1 && errxs == nil {
+		specexportwpoint := beego.AppConfig.String("task::specexportwpoint")
+		taskhandler.GetSpecWeekPointsTask(specexportwpoint)
+	}
 	return true
 }
